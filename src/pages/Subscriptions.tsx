@@ -93,40 +93,48 @@ const Subscriptions = () => {
               </Button>
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Next Payment</TableHead>
-                  <TableHead>Description</TableHead>
-                  <TableHead className="w-[50px]"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {subscriptions.map((subscription) => (
-                  <TableRow key={subscription.id}>
-                    <TableCell className="font-medium">{subscription.name}</TableCell>
-                    <TableCell>${subscription.amount.toFixed(2)}</TableCell>
-                    <TableCell>{formatDate(subscription.next_payment_date)}</TableCell>
-                    <TableCell className="text-gray-600 max-w-[200px] truncate">
-                      {subscription.description || "—"}
-                    </TableCell>
-                    <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => deleteSubscription(subscription.id)}
-                        disabled={isDeletingSubscription}
-                        className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </TableCell>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Amount</TableHead>
+                    <TableHead>Frequency</TableHead>
+                    <TableHead>Next Payment</TableHead>
+                    <TableHead className="hidden sm:table-cell">Description</TableHead>
+                    <TableHead className="w-[50px]"></TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {subscriptions.map((subscription) => (
+                    <TableRow key={subscription.id}>
+                      <TableCell className="font-medium">{subscription.name}</TableCell>
+                      <TableCell>${subscription.amount.toFixed(2)}</TableCell>
+                      <TableCell>
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
+                          {subscription.renewal_interval || 'Monthly'}
+                        </span>
+                      </TableCell>
+                      <TableCell>{formatDate(subscription.next_payment_date)}</TableCell>
+                      <TableCell className="hidden sm:table-cell text-gray-600 max-w-[200px] truncate">
+                        {subscription.description || "—"}
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => deleteSubscription(subscription.id)}
+                          disabled={isDeletingSubscription}
+                          className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           )}
         </CardContent>
       </Card>

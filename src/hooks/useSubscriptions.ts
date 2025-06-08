@@ -11,6 +11,7 @@ export interface Subscription {
   amount: number;
   next_payment_date: string;
   description: string | null;
+  renewal_interval: string | null;
   created_at: string;
   updated_at: string;
 }

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useSubscriptions } from "@/hooks/useSubscriptions";
 
 interface AddSubscriptionFormProps {
@@ -19,6 +20,7 @@ export const AddSubscriptionForm = ({ open, onOpenChange }: AddSubscriptionFormP
     new Date().toISOString().split('T')[0]
   );
   const [description, setDescription] = useState("");
+  const [renewalInterval, setRenewalInterval] = useState("Monthly");
 
   const { addSubscription, isAddingSubscription } = useSubscriptions();
 
@@ -34,6 +36,7 @@ export const AddSubscriptionForm = ({ open, onOpenChange }: AddSubscriptionFormP
       amount: parseFloat(amount),
       next_payment_date: nextPaymentDate,
       description: description.trim() || null,
+      renewal_interval: renewalInterval,
     });
 
     // Reset form
@@ -41,6 +44,7 @@ export const AddSubscriptionForm = ({ open, onOpenChange }: AddSubscriptionFormP
     setAmount("");
     setNextPaymentDate(new Date().toISOString().split('T')[0]);
     setDescription("");
+    setRenewalInterval("Monthly");
     onOpenChange(false);
   };
 
@@ -75,6 +79,21 @@ export const AddSubscriptionForm = ({ open, onOpenChange }: AddSubscriptionFormP
               onChange={(e) => setAmount(e.target.value)}
               required
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="renewal-frequency">Renewal Frequency *</Label>
+            <Select value={renewalInterval} onValueChange={setRenewalInterval}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select frequency" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Monthly">Monthly</SelectItem>
+                <SelectItem value="Quarterly">Quarterly</SelectItem>
+                <SelectItem value="Yearly">Yearly</SelectItem>
+                <SelectItem value="Custom">Custom</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-2">
