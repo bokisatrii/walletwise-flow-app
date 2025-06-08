@@ -27,25 +27,51 @@ export const useTransactions = (month?: string, category?: string) => {
   return useQuery({
     queryKey: ['transactions', month, category],
     queryFn: async () => {
-      let query = supabase
-        .from('transactions')
-        .select('*')
-        .order('date', { ascending: false });
+      try {
+        let query = supabase
+          .from('transactions')
+          .select('*')
+          .order('date', { ascending: false });
 
-      if (month) {
-        const startDate = `${month}-01`;
-        const endDate = `${month}-31`;
-        query = query.gte('date', startDate).lte('date', endDate);
+        if (month) {
+          const startDate = `${month}-01`;
+          const endDate = `${month}-31`;
+          query = query.gte('date', startDate).lte('date', endDate);
+        }
+
+        if (category && category !== 'all') {
+          query = query.eq('category', category);
+        }
+
+        const { data, error } = await query;
+        
+        if (error) {
+          console.error('Transactions query error:', error);
+          toast({
+            title: "Data Error",
+            description: "Failed to load transactions. Please try again.",
+            variant: "destructive",
+          });
+          return [];
+        }
+        
+        return data as Transaction[] || [];
+      } catch (error) {
+        console.error('Unexpected error in useTransactions:', error);
+        toast({
+          title: "Unexpected Error",
+          description: "Something went wrong while loading transactions.",
+          variant: "destructive",
+        });
+        return [];
       }
-
-      if (category && category !== 'all') {
-        query = query.eq('category', category);
+    },
+    retry: (failureCount, error) => {
+      // Don't retry on auth errors
+      if (error?.message?.includes('JWT') || error?.code === 'PGRST301') {
+        return false;
       }
-
-      const { data, error } = await query;
-      
-      if (error) throw error;
-      return data as Transaction[];
+      return failureCount < 2;
     },
   });
 };
@@ -55,17 +81,22 @@ export const useCreateTransaction = () => {
 
   return useMutation({
     mutationFn: async (transaction: TransactionInsert) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error('Not authenticated');
 
-      const { data, error } = await supabase
-        .from('transactions')
-        .insert([{ ...transaction, user_id: user.id }])
-        .select()
-        .single();
+        const { data, error } = await supabase
+          .from('transactions')
+          .insert([{ ...transaction, user_id: user.id }])
+          .select()
+          .single();
 
-      if (error) throw error;
-      return data as Transaction;
+        if (error) throw error;
+        return data as Transaction;
+      } catch (error) {
+        console.error('Create transaction error:', error);
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
@@ -75,6 +106,7 @@ export const useCreateTransaction = () => {
       });
     },
     onError: (error: any) => {
+      console.error('Transaction creation failed:', error);
       toast({
         title: "Error",
         description: error.message || "Failed to add transaction",
@@ -89,12 +121,17 @@ export const useDeleteTransaction = () => {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('transactions')
-        .delete()
-        .eq('id', id);
+      try {
+        const { error } = await supabase
+          .from('transactions')
+          .delete()
+          .eq('id', id);
 
-      if (error) throw error;
+        if (error) throw error;
+      } catch (error) {
+        console.error('Delete transaction error:', error);
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
@@ -104,6 +141,7 @@ export const useDeleteTransaction = () => {
       });
     },
     onError: (error: any) => {
+      console.error('Transaction deletion failed:', error);
       toast({
         title: "Error",
         description: error.message || "Failed to delete transaction",

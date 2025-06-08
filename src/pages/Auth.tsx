@@ -7,12 +7,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Wallet, Sparkles } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
 
-interface AuthProps {
-  onAuthSuccess: () => void;
-}
-
-const Auth = ({ onAuthSuccess }: AuthProps) => {
+const Auth = () => {
+  const navigate = useNavigate();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -36,12 +34,15 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
           title: "Welcome back!",
           description: "You have successfully signed in",
         });
+        
+        // Redirect will be handled by onAuthStateChange
+        navigate('/dashboard');
       } else {
         const { error } = await supabase.auth.signUp({
           email,
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/`
+            emailRedirectTo: `${window.location.origin}/dashboard`
           }
         });
         
@@ -52,12 +53,11 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
           description: "Check your email to confirm your account",
         });
       }
-      
-      onAuthSuccess();
     } catch (error: any) {
+      console.error('Auth error:', error);
       toast({
         title: "Error",
-        description: error.message || "An error occurred",
+        description: error.message || "An error occurred during authentication",
         variant: "destructive",
       });
     } finally {
@@ -82,8 +82,10 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
         description: "Exploring WalletWise with sample data",
       });
       
-      onAuthSuccess();
+      // Redirect will be handled by onAuthStateChange
+      navigate('/dashboard');
     } catch (error: any) {
+      console.error('Demo login error:', error);
       toast({
         title: "Demo Error",
         description: error.message || "Failed to load demo",

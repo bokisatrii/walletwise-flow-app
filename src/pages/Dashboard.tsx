@@ -14,32 +14,49 @@ import { toast } from "@/hooks/use-toast";
 const Dashboard = () => {
   const [showAddTransaction, setShowAddTransaction] = useState(false);
   const [isDemo, setIsDemo] = useState(false);
+  const [userEmail, setUserEmail] = useState<string>("");
   const currentMonth = format(new Date(), 'yyyy-MM');
-  const { data: transactions = [], isLoading } = useTransactions(currentMonth);
+  const { data: transactions = [], isLoading, error } = useTransactions(currentMonth);
   const { createDemoTransactions, isCreating } = useDemoData();
 
   useEffect(() => {
     // Check if this is the demo account
     const checkDemoUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user?.email === "demo@walletwise.com") {
-        setIsDemo(true);
-        // If demo user has no transactions, create demo data
-        if (transactions.length === 0 && !isLoading) {
-          createDemoTransactions();
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user?.email) {
+          setUserEmail(user.email);
+          if (user.email === "demo@walletwise.com") {
+            setIsDemo(true);
+            // If demo user has no transactions, create demo data
+            if (transactions.length === 0 && !isLoading && !error) {
+              createDemoTransactions();
+            }
+          }
         }
+      } catch (error) {
+        console.error('Error checking user:', error);
       }
     };
     
     checkDemoUser();
-  }, [transactions.length, isLoading, createDemoTransactions]);
+  }, [transactions.length, isLoading, error, createDemoTransactions]);
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    toast({
-      title: "Signed out",
-      description: "You have been signed out successfully",
-    });
+    try {
+      await supabase.auth.signOut();
+      toast({
+        title: "Signed out",
+        description: "You have been signed out successfully",
+      });
+    } catch (error) {
+      console.error('Sign out error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to sign out",
+        variant: "destructive",
+      });
+    }
   };
 
   // Calculate totals for current month
@@ -56,6 +73,7 @@ const Dashboard = () => {
   // Recent transactions (last 5)
   const recentTransactions = transactions.slice(0, 5);
 
+  // Show loading state
   if (isLoading || isCreating) {
     return (
       <div className="p-4 space-y-6 animate-fade-in">
@@ -69,6 +87,36 @@ const Dashboard = () => {
             <p className="text-gray-600">Setting up your demo experience...</p>
           </div>
         )}
+        <div className="grid grid-cols-2 gap-4">
+          <div className="h-20 bg-gray-200 rounded animate-pulse"></div>
+          <div className="h-20 bg-gray-200 rounded animate-pulse"></div>
+        </div>
+        <div className="h-64 bg-gray-200 rounded animate-pulse"></div>
+      </div>
+    );
+  }
+
+  // Show error state if there's an error and no cached data
+  if (error && transactions.length === 0) {
+    return (
+      <div className="p-4 space-y-6 animate-fade-in">
+        <div className="pt-4 flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">Dashboard</h1>
+            <p className="text-gray-600">Welcome back to WalletWise</p>
+          </div>
+          <Button variant="outline" onClick={handleSignOut}>
+            Sign Out
+          </Button>
+        </div>
+        <Card className="text-center py-8">
+          <CardContent>
+            <p className="text-gray-500 mb-4">Unable to load data at the moment</p>
+            <Button onClick={() => window.location.reload()}>
+              Try Again
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -94,7 +142,7 @@ const Dashboard = () => {
         <div>
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Dashboard</h1>
           <p className="text-gray-600">
-            {isDemo ? "Welcome to WalletWise Demo" : "Welcome back to WalletWise"}
+            {isDemo ? "Welcome to WalletWise Demo" : `Welcome back${userEmail ? ` ${userEmail.split('@')[0]}` : ''}`}
           </p>
         </div>
         <Button variant="outline" onClick={handleSignOut}>
@@ -156,8 +204,17 @@ const Dashboard = () => {
         <CardContent>
           {recentTransactions.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
-              <p>No transactions yet</p>
-              <p className="text-sm">Add your first transaction to get started</p>
+              <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
+                <Plus className="h-8 w-8 text-gray-400" />
+              </div>
+              <p className="mb-2">No transactions yet</p>
+              <p className="text-sm mb-4">Add your first transaction to get started</p>
+              <Button 
+                onClick={() => setShowAddTransaction(true)}
+                size="sm"
+              >
+                Add Transaction
+              </Button>
             </div>
           ) : (
             <div className="space-y-3">
