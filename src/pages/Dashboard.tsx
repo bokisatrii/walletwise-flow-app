@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus, ArrowUpRight, ArrowDownRight, TrendingUp, Info } from "lucide-react";
@@ -14,14 +15,13 @@ const Dashboard = () => {
   const [showAddTransaction, setShowAddTransaction] = useState(false);
   const [isDemo, setIsDemo] = useState(false);
   const [userEmail, setUserEmail] = useState<string>("");
-  const [demoDataCreated, setDemoDataCreated] = useState(false);
+  const [hasCreatedDemoData, setHasCreatedDemoData] = useState(false);
   
   const currentMonth = format(new Date(), 'yyyy-MM');
   const { data: transactions = [], isLoading, error, refetch } = useTransactions(currentMonth);
   const { createDemoTransactions, isCreating } = useDemoData();
 
   useEffect(() => {
-    // Check if this is the demo account
     const checkDemoUser = async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
@@ -30,15 +30,18 @@ const Dashboard = () => {
           if (user.email === "demo@walletwise.com") {
             setIsDemo(true);
             
-            // Create demo data only once and if no transactions exist
-            if (!demoDataCreated && transactions.length === 0 && !isLoading && !error && !isCreating) {
-              console.log('Creating demo data for demo user');
-              setDemoDataCreated(true);
-              await createDemoTransactions();
-              // Force refetch after demo data creation
-              setTimeout(() => {
-                refetch();
-              }, 1000);
+            // Only create demo data once per session
+            if (!hasCreatedDemoData && !isCreating) {
+              console.log('Demo user detected, creating demo data...');
+              setHasCreatedDemoData(true);
+              const result = await createDemoTransactions();
+              if (result > 0) {
+                // Force a refetch after demo data creation
+                setTimeout(() => {
+                  console.log('Refetching transactions after demo data creation...');
+                  refetch();
+                }, 500);
+              }
             }
           }
         }
@@ -48,7 +51,7 @@ const Dashboard = () => {
     };
     
     checkDemoUser();
-  }, [transactions.length, isLoading, error, demoDataCreated, isCreating, createDemoTransactions, refetch]);
+  }, []); // Remove dependencies to prevent multiple demo data creation
 
   const handleSignOut = async () => {
     try {
@@ -81,8 +84,18 @@ const Dashboard = () => {
   // Recent transactions (last 5)
   const recentTransactions = transactions.slice(0, 5);
 
+  console.log('Dashboard render:', {
+    transactionsCount: transactions.length,
+    totalIncome,
+    totalExpenses,
+    balance,
+    isLoading,
+    isCreating,
+    hasCreatedDemoData
+  });
+
   // Show loading state only during initial load
-  if (isLoading && transactions.length === 0) {
+  if (isLoading && !hasCreatedDemoData) {
     return (
       <div className="p-4 space-y-6 animate-fade-in">
         <div className="pt-4">
@@ -128,22 +141,7 @@ const Dashboard = () => {
             {isDemo ? "Welcome to WalletWise Demo" : `Welcome back${userEmail ? ` ${userEmail.split('@')[0]}` : ''}`}
           </p>
         </div>
-        <Button variant="outline" onClick={async () => {
-          try {
-            await supabase.auth.signOut();
-            toast({
-              title: "Signed out",
-              description: "You have been signed out successfully",
-            });
-          } catch (error) {
-            console.error('Sign out error:', error);
-            toast({
-              title: "Error",
-              description: "Failed to sign out",
-              variant: "destructive",
-            });
-          }
-        }}>
+        <Button variant="outline" onClick={handleSignOut}>
           Sign Out
         </Button>
       </div>

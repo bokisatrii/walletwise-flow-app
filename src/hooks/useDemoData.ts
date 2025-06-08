@@ -42,20 +42,30 @@ export const useDemoData = () => {
         { amount: 95, category: "Entertainment", description: "Streaming subscriptions", date: "2024-10-05", type: "expense" as const },
       ];
 
+      console.log('Starting demo data creation...');
       let successCount = 0;
       const total = demoTransactions.length;
 
-      for (const transaction of demoTransactions) {
-        try {
-          await createTransaction.mutateAsync(transaction);
-          successCount++;
-          console.log(`Created demo transaction ${successCount}/${total}:`, transaction.description);
-          
-          // Small delay to avoid overwhelming the database
-          await new Promise(resolve => setTimeout(resolve, 100));
-        } catch (error) {
-          console.error("Failed to create demo transaction:", error);
-          // Continue with next transaction instead of stopping
+      // Use Promise.all with a smaller batch size to avoid overwhelming the database
+      const batchSize = 5;
+      for (let i = 0; i < demoTransactions.length; i += batchSize) {
+        const batch = demoTransactions.slice(i, i + batchSize);
+        
+        await Promise.all(
+          batch.map(async (transaction) => {
+            try {
+              await createTransaction.mutateAsync(transaction);
+              successCount++;
+              console.log(`Created demo transaction ${successCount}/${total}:`, transaction.description);
+            } catch (error) {
+              console.error("Failed to create demo transaction:", error);
+            }
+          })
+        );
+        
+        // Small delay between batches
+        if (i + batchSize < demoTransactions.length) {
+          await new Promise(resolve => setTimeout(resolve, 200));
         }
       }
 

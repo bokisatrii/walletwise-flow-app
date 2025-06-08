@@ -27,31 +27,28 @@ export const useTransactions = (month?: string, category?: string) => {
     queryKey: ['transactions', month, category],
     queryFn: async () => {
       try {
-        // Check if user is authenticated
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) {
           console.log('No authenticated user found');
           return [];
         }
 
+        console.log('Fetching transactions for user:', user.id);
+
         let query = supabase
           .from('transactions')
           .select('*')
+          .eq('user_id', user.id)
           .order('date', { ascending: false });
 
-        if (month) {
-          // Get the year and month
+        if (month && month !== 'all') {
+          const startDate = `${month}-01`;
           const year = parseInt(month.split('-')[0]);
           const monthNum = parseInt(month.split('-')[1]);
+          const lastDay = new Date(year, monthNum, 0).getDate();
+          const endDate = `${month}-${lastDay.toString().padStart(2, '0')}`;
           
-          // Get the first and last day of the month
-          const firstDay = new Date(year, monthNum - 1, 1);
-          const lastDay = new Date(year, monthNum, 0);
-          
-          const startDate = firstDay.toISOString().split('T')[0];
-          const endDate = lastDay.toISOString().split('T')[0];
-          
-          console.log(`Filtering transactions for month ${month}: ${startDate} to ${endDate}`);
+          console.log(`Filtering by month ${month}: ${startDate} to ${endDate}`);
           query = query.gte('date', startDate).lte('date', endDate);
         }
 
@@ -66,15 +63,14 @@ export const useTransactions = (month?: string, category?: string) => {
           throw error;
         }
         
-        console.log(`Loaded ${data?.length || 0} transactions`);
+        console.log(`Successfully loaded ${data?.length || 0} transactions:`, data);
         return data as Transaction[] || [];
       } catch (error) {
-        console.error('Unexpected error in useTransactions:', error);
+        console.error('Error in useTransactions:', error);
         throw error;
       }
     },
     retry: (failureCount, error: any) => {
-      // Don't retry on auth errors or RLS violations
       if (error?.message?.includes('JWT') || 
           error?.message?.includes('RLS') ||
           error?.code === 'PGRST301' || 
@@ -83,7 +79,7 @@ export const useTransactions = (month?: string, category?: string) => {
       }
       return failureCount < 2;
     },
-    staleTime: 0, // Always refetch to ensure fresh data
+    staleTime: 0,
     refetchOnWindowFocus: true,
   });
 };
@@ -94,7 +90,6 @@ export const useCreateTransaction = () => {
   return useMutation({
     mutationFn: async (transaction: TransactionInsert) => {
       try {
-        // Get the current user
         const { data: { user }, error: userError } = await supabase.auth.getUser();
         
         if (userError || !user) {
@@ -127,7 +122,6 @@ export const useCreateTransaction = () => {
     },
     onSuccess: (data) => {
       console.log('Transaction creation successful, invalidating queries');
-      // Invalidate all transaction queries to refresh the data
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
       toast({
         title: "Transaction added!",
@@ -161,7 +155,6 @@ export const useDeleteTransaction = () => {
   return useMutation({
     mutationFn: async (id: string) => {
       try {
-        // Check if user is authenticated
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) {
           throw new Error('You must be logged in to delete transactions');
