@@ -14,9 +14,10 @@ const Dashboard = () => {
   const [showAddTransaction, setShowAddTransaction] = useState(false);
   const [isDemo, setIsDemo] = useState(false);
   const [userEmail, setUserEmail] = useState<string>("");
-  const [demoDataInitialized, setDemoDataInitialized] = useState(false);
+  const [demoDataCreated, setDemoDataCreated] = useState(false);
+  
   const currentMonth = format(new Date(), 'yyyy-MM');
-  const { data: transactions = [], isLoading, error } = useTransactions(currentMonth);
+  const { data: transactions = [], isLoading, error, refetch } = useTransactions(currentMonth);
   const { createDemoTransactions, isCreating } = useDemoData();
 
   useEffect(() => {
@@ -28,11 +29,16 @@ const Dashboard = () => {
           setUserEmail(user.email);
           if (user.email === "demo@walletwise.com") {
             setIsDemo(true);
-            // Only create demo data once per session and if no transactions exist
-            if (transactions.length === 0 && !isLoading && !error && !demoDataInitialized && !isCreating) {
+            
+            // Create demo data only once and if no transactions exist
+            if (!demoDataCreated && transactions.length === 0 && !isLoading && !error && !isCreating) {
               console.log('Creating demo data for demo user');
-              setDemoDataInitialized(true);
-              createDemoTransactions();
+              setDemoDataCreated(true);
+              await createDemoTransactions();
+              // Force refetch after demo data creation
+              setTimeout(() => {
+                refetch();
+              }, 1000);
             }
           }
         }
@@ -42,7 +48,7 @@ const Dashboard = () => {
     };
     
     checkDemoUser();
-  }, [transactions.length, isLoading, error, demoDataInitialized, isCreating, createDemoTransactions]);
+  }, [transactions.length, isLoading, error, demoDataCreated, isCreating, createDemoTransactions, refetch]);
 
   const handleSignOut = async () => {
     try {
@@ -75,8 +81,8 @@ const Dashboard = () => {
   // Recent transactions (last 5)
   const recentTransactions = transactions.slice(0, 5);
 
-  // Show loading state
-  if (isLoading || isCreating) {
+  // Show loading state only during initial load
+  if (isLoading && transactions.length === 0) {
     return (
       <div className="p-4 space-y-6 animate-fade-in">
         <div className="pt-4">
@@ -98,31 +104,6 @@ const Dashboard = () => {
     );
   }
 
-  // Show error state if there's an error and no cached data
-  if (error && transactions.length === 0) {
-    return (
-      <div className="p-4 space-y-6 animate-fade-in">
-        <div className="pt-4 flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">Dashboard</h1>
-            <p className="text-gray-600">Welcome back to WalletWise</p>
-          </div>
-          <Button variant="outline" onClick={handleSignOut}>
-            Sign Out
-          </Button>
-        </div>
-        <Card className="text-center py-8">
-          <CardContent>
-            <p className="text-gray-500 mb-4">Unable to load data at the moment</p>
-            <Button onClick={() => window.location.reload()}>
-              Try Again
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
   return (
     <div className="p-4 space-y-6 animate-fade-in">
       {/* Demo Banner */}
@@ -132,7 +113,7 @@ const Dashboard = () => {
             <div className="flex items-center gap-2 text-accent">
               <Info className="h-4 w-4" />
               <span className="text-sm font-medium">
-                You're viewing the demo version with sample data
+                You're viewing the demo version with sample data ({transactions.length} transactions loaded)
               </span>
             </div>
           </CardContent>
@@ -147,7 +128,22 @@ const Dashboard = () => {
             {isDemo ? "Welcome to WalletWise Demo" : `Welcome back${userEmail ? ` ${userEmail.split('@')[0]}` : ''}`}
           </p>
         </div>
-        <Button variant="outline" onClick={handleSignOut}>
+        <Button variant="outline" onClick={async () => {
+          try {
+            await supabase.auth.signOut();
+            toast({
+              title: "Signed out",
+              description: "You have been signed out successfully",
+            });
+          } catch (error) {
+            console.error('Sign out error:', error);
+            toast({
+              title: "Error",
+              description: "Failed to sign out",
+              variant: "destructive",
+            });
+          }
+        }}>
           Sign Out
         </Button>
       </div>

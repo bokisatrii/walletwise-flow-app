@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -41,15 +40,16 @@ export const useTransactions = (month?: string, category?: string) => {
           .order('date', { ascending: false });
 
         if (month) {
-          // Fix date range calculation to avoid invalid dates like June 31
+          // Get the year and month
           const year = parseInt(month.split('-')[0]);
           const monthNum = parseInt(month.split('-')[1]);
           
-          // Get the last day of the month properly
-          const lastDay = new Date(year, monthNum, 0).getDate();
+          // Get the first and last day of the month
+          const firstDay = new Date(year, monthNum - 1, 1);
+          const lastDay = new Date(year, monthNum, 0);
           
-          const startDate = `${month}-01`;
-          const endDate = `${month}-${lastDay.toString().padStart(2, '0')}`;
+          const startDate = firstDay.toISOString().split('T')[0];
+          const endDate = lastDay.toISOString().split('T')[0];
           
           console.log(`Filtering transactions for month ${month}: ${startDate} to ${endDate}`);
           query = query.gte('date', startDate).lte('date', endDate);
@@ -63,31 +63,14 @@ export const useTransactions = (month?: string, category?: string) => {
         
         if (error) {
           console.error('Transactions query error:', error);
-          if (error.code === 'PGRST301' || error.message?.includes('JWT')) {
-            toast({
-              title: "Authentication Error",
-              description: "Please sign in to view your transactions.",
-              variant: "destructive",
-            });
-          } else {
-            toast({
-              title: "Data Error",
-              description: "Failed to load transactions. Please try again.",
-              variant: "destructive",
-            });
-          }
-          return [];
+          throw error;
         }
         
+        console.log(`Loaded ${data?.length || 0} transactions`);
         return data as Transaction[] || [];
       } catch (error) {
         console.error('Unexpected error in useTransactions:', error);
-        toast({
-          title: "Unexpected Error",
-          description: "Something went wrong while loading transactions.",
-          variant: "destructive",
-        });
-        return [];
+        throw error;
       }
     },
     retry: (failureCount, error: any) => {
@@ -100,6 +83,8 @@ export const useTransactions = (month?: string, category?: string) => {
       }
       return failureCount < 2;
     },
+    staleTime: 0, // Always refetch to ensure fresh data
+    refetchOnWindowFocus: true,
   });
 };
 

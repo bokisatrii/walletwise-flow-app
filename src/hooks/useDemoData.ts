@@ -47,15 +47,19 @@ export const useDemoData = () => {
 
       for (const transaction of demoTransactions) {
         try {
-          await new Promise(resolve => setTimeout(resolve, 200)); // Longer delay to avoid overwhelming
           await createTransaction.mutateAsync(transaction);
           successCount++;
           console.log(`Created demo transaction ${successCount}/${total}:`, transaction.description);
+          
+          // Small delay to avoid overwhelming the database
+          await new Promise(resolve => setTimeout(resolve, 100));
         } catch (error) {
           console.error("Failed to create demo transaction:", error);
           // Continue with next transaction instead of stopping
         }
       }
+
+      console.log(`Demo data creation completed: ${successCount}/${total} transactions created`);
 
       if (successCount === total) {
         toast({
@@ -74,6 +78,8 @@ export const useDemoData = () => {
           variant: "destructive",
         });
       }
+
+      return successCount;
     } catch (error) {
       console.error("Error creating demo data:", error);
       toast({
@@ -81,6 +87,7 @@ export const useDemoData = () => {
         description: "Failed to set up demo data",
         variant: "destructive",
       });
+      return 0;
     }
   };
 
