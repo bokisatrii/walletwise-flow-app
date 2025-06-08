@@ -7,12 +7,14 @@ interface AuthContextType {
   session: Session | null;
   loading: boolean;
   error: string | null;
+  isNewSession: boolean; // Add flag to track new sessions
 }
 
 const AuthContext = createContext<AuthContextType>({
   session: null,
   loading: true,
   error: null,
+  isNewSession: false,
 });
 
 export const useAuth = () => {
@@ -31,6 +33,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isNewSession, setIsNewSession] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -42,6 +45,14 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           async (event, session) => {
             if (mounted) {
               console.log('Auth state changed:', event, session?.user?.email);
+              
+              // Track if this is a new session (sign in)
+              if (event === 'SIGNED_IN' && session) {
+                setIsNewSession(true);
+                // Reset the flag after a short delay to allow components to react
+                setTimeout(() => setIsNewSession(false), 1000);
+              }
+              
               setSession(session);
               setLoading(false);
               setError(null);
@@ -83,7 +94,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ session, loading, error }}>
+    <AuthContext.Provider value={{ session, loading, error, isNewSession }}>
       {children}
     </AuthContext.Provider>
   );

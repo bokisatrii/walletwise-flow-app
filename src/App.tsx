@@ -6,6 +6,7 @@ import { BrowserRouter } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/providers/AuthProvider";
 import { AppRoutes } from "@/config/routes";
 import { AuthFallback } from "@/components/AuthFallback";
+import { useSubscriptionReminders } from "@/hooks/useSubscriptionReminders";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -24,6 +25,9 @@ const queryClient = new QueryClient({
 
 const AppContent = () => {
   const { session, loading, error } = useAuth();
+  
+  // Initialize subscription reminders
+  useSubscriptionReminders();
 
   if (loading) {
     return (
