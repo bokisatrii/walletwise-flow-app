@@ -41,11 +41,6 @@ const App = () => {
         console.log('Auth state changed:', event, session?.user?.email);
         setSession(session);
         setLoading(false);
-        
-        // Handle successful login/signup
-        if (event === 'SIGNED_IN' && session) {
-          await handleUserLogin(session);
-        }
       }
     );
 
@@ -57,46 +52,6 @@ const App = () => {
 
     return () => subscription.unsubscribe();
   }, []);
-
-  const handleUserLogin = async (session: Session) => {
-    try {
-      // Create default user profile if it doesn't exist (only if profiles table exists)
-      try {
-        const { data: profile, error: profileError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .maybeSingle();
-
-        if (profileError && profileError.code !== 'PGRST116') {
-          console.error('Error checking profile:', profileError);
-          return;
-        }
-
-        // Create profile if it doesn't exist
-        if (!profile) {
-          const { error: insertError } = await supabase
-            .from('profiles')
-            .insert([
-              {
-                id: session.user.id,
-                email: session.user.email,
-                created_at: new Date().toISOString(),
-              }
-            ]);
-
-          if (insertError) {
-            console.error('Error creating profile:', insertError);
-          }
-        }
-      } catch (error) {
-        // Profiles table might not exist yet, that's okay
-        console.log('Profiles table not available yet:', error);
-      }
-    } catch (error) {
-      console.error('Error in handleUserLogin:', error);
-    }
-  };
 
   if (loading) {
     return (
