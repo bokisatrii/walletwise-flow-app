@@ -41,8 +41,17 @@ export const useTransactions = (month?: string, category?: string) => {
           .order('date', { ascending: false });
 
         if (month) {
+          // Fix date range calculation to avoid invalid dates like June 31
+          const year = parseInt(month.split('-')[0]);
+          const monthNum = parseInt(month.split('-')[1]);
+          
+          // Get the last day of the month properly
+          const lastDay = new Date(year, monthNum, 0).getDate();
+          
           const startDate = `${month}-01`;
-          const endDate = `${month}-31`;
+          const endDate = `${month}-${lastDay.toString().padStart(2, '0')}`;
+          
+          console.log(`Filtering transactions for month ${month}: ${startDate} to ${endDate}`);
           query = query.gte('date', startDate).lte('date', endDate);
         }
 

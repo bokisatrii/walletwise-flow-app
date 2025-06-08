@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus, ArrowUpRight, ArrowDownRight, TrendingUp, Info } from "lucide-react";
@@ -15,6 +14,7 @@ const Dashboard = () => {
   const [showAddTransaction, setShowAddTransaction] = useState(false);
   const [isDemo, setIsDemo] = useState(false);
   const [userEmail, setUserEmail] = useState<string>("");
+  const [demoDataInitialized, setDemoDataInitialized] = useState(false);
   const currentMonth = format(new Date(), 'yyyy-MM');
   const { data: transactions = [], isLoading, error } = useTransactions(currentMonth);
   const { createDemoTransactions, isCreating } = useDemoData();
@@ -28,8 +28,10 @@ const Dashboard = () => {
           setUserEmail(user.email);
           if (user.email === "demo@walletwise.com") {
             setIsDemo(true);
-            // If demo user has no transactions, create demo data
-            if (transactions.length === 0 && !isLoading && !error) {
+            // Only create demo data once per session and if no transactions exist
+            if (transactions.length === 0 && !isLoading && !error && !demoDataInitialized && !isCreating) {
+              console.log('Creating demo data for demo user');
+              setDemoDataInitialized(true);
               createDemoTransactions();
             }
           }
@@ -40,7 +42,7 @@ const Dashboard = () => {
     };
     
     checkDemoUser();
-  }, [transactions.length, isLoading, error, createDemoTransactions]);
+  }, [transactions.length, isLoading, error, demoDataInitialized, isCreating, createDemoTransactions]);
 
   const handleSignOut = async () => {
     try {
