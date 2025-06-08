@@ -15,6 +15,7 @@ export type Database = {
           category: string
           created_at: string
           date: string
+          demo_user: boolean | null
           description: string | null
           id: string
           type: string
@@ -26,6 +27,7 @@ export type Database = {
           category: string
           created_at?: string
           date?: string
+          demo_user?: boolean | null
           description?: string | null
           id?: string
           type: string
@@ -37,6 +39,7 @@ export type Database = {
           category?: string
           created_at?: string
           date?: string
+          demo_user?: boolean | null
           description?: string | null
           id?: string
           type?: string

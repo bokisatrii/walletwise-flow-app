@@ -1,3 +1,4 @@
+
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -12,6 +13,7 @@ export interface Transaction {
   created_at: string;
   updated_at: string;
   user_id: string;
+  demo_user?: boolean;
 }
 
 export interface TransactionInsert {
@@ -27,18 +29,11 @@ export const useTransactions = (month?: string, category?: string) => {
     queryKey: ['transactions', month, category],
     queryFn: async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-          console.log('No authenticated user found');
-          return [];
-        }
-
-        console.log('Fetching transactions for user:', user.id);
+        console.log('Fetching transactions...');
 
         let query = supabase
           .from('transactions')
           .select('*')
-          .eq('user_id', user.id)
           .order('date', { ascending: false });
 
         if (month && month !== 'all') {
@@ -103,7 +98,8 @@ export const useCreateTransaction = () => {
           .from('transactions')
           .insert([{ 
             ...transaction, 
-            user_id: user.id 
+            user_id: user.id,
+            demo_user: false
           }])
           .select()
           .single();

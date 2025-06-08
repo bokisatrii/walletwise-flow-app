@@ -5,7 +5,6 @@ import { Plus, ArrowUpRight, ArrowDownRight, TrendingUp, Info } from "lucide-rea
 import { useState, useEffect } from "react";
 import { AddTransactionModal } from "@/components/AddTransactionModal";
 import { useTransactions } from "@/hooks/useTransactions";
-import { useDemoData } from "@/hooks/useDemoData";
 import { TransactionChart } from "@/components/TransactionChart";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,11 +14,9 @@ const Dashboard = () => {
   const [showAddTransaction, setShowAddTransaction] = useState(false);
   const [isDemo, setIsDemo] = useState(false);
   const [userEmail, setUserEmail] = useState<string>("");
-  const [hasCreatedDemoData, setHasCreatedDemoData] = useState(false);
   
   const currentMonth = format(new Date(), 'yyyy-MM');
-  const { data: transactions = [], isLoading, error, refetch } = useTransactions(currentMonth);
-  const { createDemoTransactions, isCreating } = useDemoData();
+  const { data: transactions = [], isLoading, error } = useTransactions(currentMonth);
 
   useEffect(() => {
     const checkDemoUser = async () => {
@@ -29,20 +26,6 @@ const Dashboard = () => {
           setUserEmail(user.email);
           if (user.email === "demo@walletwise.com") {
             setIsDemo(true);
-            
-            // Only create demo data once per session
-            if (!hasCreatedDemoData && !isCreating) {
-              console.log('Demo user detected, creating demo data...');
-              setHasCreatedDemoData(true);
-              const result = await createDemoTransactions();
-              if (result > 0) {
-                // Force a refetch after demo data creation
-                setTimeout(() => {
-                  console.log('Refetching transactions after demo data creation...');
-                  refetch();
-                }, 500);
-              }
-            }
           }
         }
       } catch (error) {
@@ -51,7 +34,7 @@ const Dashboard = () => {
     };
     
     checkDemoUser();
-  }, []); // Remove dependencies to prevent multiple demo data creation
+  }, []);
 
   const handleSignOut = async () => {
     try {
@@ -89,25 +72,16 @@ const Dashboard = () => {
     totalIncome,
     totalExpenses,
     balance,
-    isLoading,
-    isCreating,
-    hasCreatedDemoData
+    isLoading
   });
 
-  // Show loading state only during initial load
-  if (isLoading && !hasCreatedDemoData) {
+  if (isLoading) {
     return (
       <div className="p-4 space-y-6 animate-fade-in">
         <div className="pt-4">
           <div className="h-8 bg-gray-200 rounded animate-pulse mb-2"></div>
           <div className="h-4 bg-gray-200 rounded animate-pulse w-2/3"></div>
         </div>
-        {isCreating && (
-          <div className="text-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-            <p className="text-gray-600">Setting up your demo experience...</p>
-          </div>
-        )}
         <div className="grid grid-cols-2 gap-4">
           <div className="h-20 bg-gray-200 rounded animate-pulse"></div>
           <div className="h-20 bg-gray-200 rounded animate-pulse"></div>
