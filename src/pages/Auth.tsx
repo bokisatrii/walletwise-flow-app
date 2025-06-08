@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Wallet } from "lucide-react";
+import { Wallet, Sparkles } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -17,6 +17,7 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [demoLoading, setDemoLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,6 +65,35 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
     }
   };
 
+  const handleDemoLogin = async () => {
+    setDemoLoading(true);
+
+    try {
+      // Login with demo account
+      const { error } = await supabase.auth.signInWithPassword({
+        email: "demo@walletwise.com",
+        password: "demo123"
+      });
+      
+      if (error) throw error;
+
+      toast({
+        title: "Welcome to the demo!",
+        description: "Exploring WalletWise with sample data",
+      });
+      
+      onAuthSuccess();
+    } catch (error: any) {
+      toast({
+        title: "Demo Error",
+        description: error.message || "Failed to load demo",
+        variant: "destructive",
+      });
+    } finally {
+      setDemoLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-primary flex items-center justify-center p-4">
       <Card className="w-full max-w-md animate-fade-in">
@@ -78,7 +108,7 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
             {isLogin ? "Welcome back to your financial journey" : "Start your smart financial journey"}
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-6">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
@@ -102,11 +132,37 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
                 required
               />
             </div>
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button type="submit" className="w-full" disabled={loading || demoLoading}>
               {loading ? "Loading..." : isLogin ? "Sign In" : "Sign Up"}
             </Button>
           </form>
-          <div className="mt-4 text-center">
+
+          {/* Demo Button */}
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-2 text-muted-foreground">Or</span>
+            </div>
+          </div>
+
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full border-accent text-accent hover:bg-accent hover:text-white transition-all duration-200 hover-scale"
+            onClick={handleDemoLogin}
+            disabled={loading || demoLoading}
+          >
+            <Sparkles className="h-4 w-4 mr-2" />
+            {demoLoading ? "Loading demo..." : "Try Demo"}
+          </Button>
+
+          <p className="text-xs text-center text-muted-foreground">
+            Demo includes sample transactions and all features
+          </p>
+
+          <div className="text-center">
             <button
               type="button"
               onClick={() => setIsLogin(!isLogin)}

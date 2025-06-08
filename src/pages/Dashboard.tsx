@@ -1,10 +1,11 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, ArrowUpRight, ArrowDownRight, TrendingUp } from "lucide-react";
-import { useState } from "react";
+import { Plus, ArrowUpRight, ArrowDownRight, TrendingUp, Info } from "lucide-react";
+import { useState, useEffect } from "react";
 import { AddTransactionModal } from "@/components/AddTransactionModal";
 import { useTransactions } from "@/hooks/useTransactions";
+import { useDemoData } from "@/hooks/useDemoData";
 import { TransactionChart } from "@/components/TransactionChart";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,8 +13,26 @@ import { toast } from "@/hooks/use-toast";
 
 const Dashboard = () => {
   const [showAddTransaction, setShowAddTransaction] = useState(false);
+  const [isDemo, setIsDemo] = useState(false);
   const currentMonth = format(new Date(), 'yyyy-MM');
   const { data: transactions = [], isLoading } = useTransactions(currentMonth);
+  const { createDemoTransactions, isCreating } = useDemoData();
+
+  useEffect(() => {
+    // Check if this is the demo account
+    const checkDemoUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user?.email === "demo@walletwise.com") {
+        setIsDemo(true);
+        // If demo user has no transactions, create demo data
+        if (transactions.length === 0 && !isLoading) {
+          createDemoTransactions();
+        }
+      }
+    };
+    
+    checkDemoUser();
+  }, [transactions.length, isLoading, createDemoTransactions]);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -37,24 +56,46 @@ const Dashboard = () => {
   // Recent transactions (last 5)
   const recentTransactions = transactions.slice(0, 5);
 
-  if (isLoading) {
+  if (isLoading || isCreating) {
     return (
       <div className="p-4 space-y-6 animate-fade-in">
         <div className="pt-4">
           <div className="h-8 bg-gray-200 rounded animate-pulse mb-2"></div>
           <div className="h-4 bg-gray-200 rounded animate-pulse w-2/3"></div>
         </div>
+        {isCreating && (
+          <div className="text-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-gray-600">Setting up your demo experience...</p>
+          </div>
+        )}
       </div>
     );
   }
 
   return (
     <div className="p-4 space-y-6 animate-fade-in">
+      {/* Demo Banner */}
+      {isDemo && (
+        <Card className="border-accent bg-accent/5 animate-scale-in">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 text-accent">
+              <Info className="h-4 w-4" />
+              <span className="text-sm font-medium">
+                You're viewing the demo version with sample data
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Header */}
       <div className="pt-4 flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Dashboard</h1>
-          <p className="text-gray-600">Welcome back to WalletWise</p>
+          <p className="text-gray-600">
+            {isDemo ? "Welcome to WalletWise Demo" : "Welcome back to WalletWise"}
+          </p>
         </div>
         <Button variant="outline" onClick={handleSignOut}>
           Sign Out
@@ -62,7 +103,7 @@ const Dashboard = () => {
       </div>
 
       {/* Balance Card */}
-      <Card className="gradient-primary text-white">
+      <Card className="gradient-primary text-white animate-fade-in">
         <CardContent className="p-6">
           <div className="flex justify-between items-center">
             <div>
@@ -79,7 +120,7 @@ const Dashboard = () => {
 
       {/* Income & Expenses Cards */}
       <div className="grid grid-cols-2 gap-4">
-        <Card>
+        <Card className="hover-scale transition-transform duration-200">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 text-accent mb-2">
               <ArrowUpRight className="h-4 w-4" />
@@ -90,7 +131,7 @@ const Dashboard = () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="hover-scale transition-transform duration-200">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 text-red-500 mb-2">
               <ArrowDownRight className="h-4 w-4" />
@@ -103,10 +144,12 @@ const Dashboard = () => {
       </div>
 
       {/* Spending Chart */}
-      <TransactionChart transactions={transactions} />
+      <div className="animate-fade-in">
+        <TransactionChart transactions={transactions} />
+      </div>
 
       {/* Recent Transactions */}
-      <Card>
+      <Card className="animate-fade-in">
         <CardHeader>
           <CardTitle className="text-lg">Recent Transactions</CardTitle>
         </CardHeader>
@@ -118,8 +161,12 @@ const Dashboard = () => {
             </div>
           ) : (
             <div className="space-y-3">
-              {recentTransactions.map((transaction) => (
-                <div key={transaction.id} className="flex items-center justify-between">
+              {recentTransactions.map((transaction, index) => (
+                <div 
+                  key={transaction.id} 
+                  className="flex items-center justify-between animate-fade-in hover-scale transition-all duration-200"
+                  style={{ animationDelay: `${index * 100}ms` }}
+                >
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-full bg-primary-50 flex items-center justify-center">
                       <span className="text-xs font-medium text-primary">
@@ -151,7 +198,7 @@ const Dashboard = () => {
 
       {/* Floating Action Button */}
       <Button
-        className="fixed bottom-24 right-4 w-14 h-14 rounded-full shadow-lg gradient-primary z-40"
+        className="fixed bottom-24 right-4 w-14 h-14 rounded-full shadow-lg gradient-primary z-40 hover-scale transition-all duration-200"
         onClick={() => setShowAddTransaction(true)}
       >
         <Plus className="h-6 w-6" />
