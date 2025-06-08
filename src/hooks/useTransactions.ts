@@ -28,6 +28,13 @@ export const useTransactions = (month?: string, category?: string) => {
     queryKey: ['transactions', month, category],
     queryFn: async () => {
       try {
+        // Check if user is authenticated
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          console.log('No authenticated user found');
+          return [];
+        }
+
         let query = supabase
           .from('transactions')
           .select('*')
@@ -47,11 +54,19 @@ export const useTransactions = (month?: string, category?: string) => {
         
         if (error) {
           console.error('Transactions query error:', error);
-          toast({
-            title: "Data Error",
-            description: "Failed to load transactions. Please try again.",
-            variant: "destructive",
-          });
+          if (error.code === 'PGRST301' || error.message?.includes('JWT')) {
+            toast({
+              title: "Authentication Error",
+              description: "Please sign in to view your transactions.",
+              variant: "destructive",
+            });
+          } else {
+            toast({
+              title: "Data Error",
+              description: "Failed to load transactions. Please try again.",
+              variant: "destructive",
+            });
+          }
           return [];
         }
         
@@ -85,23 +100,40 @@ export const useCreateTransaction = () => {
   return useMutation({
     mutationFn: async (transaction: TransactionInsert) => {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) throw new Error('Not authenticated');
+        // Get the current user
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        
+        if (userError || !user) {
+          throw new Error('You must be logged in to create transactions');
+        }
+
+        console.log('Creating transaction for user:', user.id);
+        console.log('Transaction data:', transaction);
 
         const { data, error } = await supabase
           .from('transactions')
-          .insert([{ ...transaction, user_id: user.id }])
+          .insert([{ 
+            ...transaction, 
+            user_id: user.id 
+          }])
           .select()
           .single();
 
-        if (error) throw error;
+        if (error) {
+          console.error('Create transaction error:', error);
+          throw error;
+        }
+
+        console.log('Transaction created successfully:', data);
         return data as Transaction;
       } catch (error) {
         console.error('Create transaction error:', error);
         throw error;
       }
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('Transaction creation successful, invalidating queries');
+      // Invalidate all transaction queries to refresh the data
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
       toast({
         title: "Transaction added!",
@@ -110,12 +142,19 @@ export const useCreateTransaction = () => {
     },
     onError: (error: any) => {
       console.error('Transaction creation failed:', error);
-      const errorMessage = error?.message || "Failed to add transaction";
+      let errorMessage = "Failed to add transaction";
+      
+      if (error?.message?.includes('JWT') || error?.code === 'PGRST301') {
+        errorMessage = "Please sign in to add transactions";
+      } else if (error?.message?.includes('RLS') || error?.message?.includes('row-level security')) {
+        errorMessage = "Unable to save transaction. Please ensure you're logged in.";
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+
       toast({
         title: "Error",
-        description: errorMessage.includes('RLS') 
-          ? "Unable to save transaction. Please ensure you're logged in."
-          : errorMessage,
+        description: errorMessage,
         variant: "destructive",
       });
     },
@@ -128,12 +167,21 @@ export const useDeleteTransaction = () => {
   return useMutation({
     mutationFn: async (id: string) => {
       try {
+        // Check if user is authenticated
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          throw new Error('You must be logged in to delete transactions');
+        }
+
         const { error } = await supabase
           .from('transactions')
           .delete()
           .eq('id', id);
 
-        if (error) throw error;
+        if (error) {
+          console.error('Delete transaction error:', error);
+          throw error;
+        }
       } catch (error) {
         console.error('Delete transaction error:', error);
         throw error;
@@ -148,9 +196,17 @@ export const useDeleteTransaction = () => {
     },
     onError: (error: any) => {
       console.error('Transaction deletion failed:', error);
+      let errorMessage = "Failed to delete transaction";
+      
+      if (error?.message?.includes('JWT') || error?.code === 'PGRST301') {
+        errorMessage = "Please sign in to delete transactions";
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+
       toast({
         title: "Error",
-        description: error?.message || "Failed to delete transaction",
+        description: errorMessage,
         variant: "destructive",
       });
     },

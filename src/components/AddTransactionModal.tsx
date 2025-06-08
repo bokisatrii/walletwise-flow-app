@@ -7,6 +7,9 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useCreateTransaction } from "@/hooks/useTransactions";
+import { supabase } from "@/integrations/supabase/client";
+import { useEffect } from "react";
+import { toast } from "@/hooks/use-toast";
 
 interface AddTransactionModalProps {
   open: boolean;
@@ -34,18 +37,62 @@ export const AddTransactionModal = ({ open, onOpenChange }: AddTransactionModalP
   const [description, setDescription] = useState("");
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [type, setType] = useState<"expense" | "income">("expense");
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   const createTransaction = useCreateTransaction();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setIsAuthenticated(!!user);
+    };
+    
+    if (open) {
+      checkAuth();
+    }
+  }, [open]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!amount || !category) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in the amount and category fields.",
+        variant: "destructive",
+      });
       return;
     }
 
+    if (!isAuthenticated) {
+      toast({
+        title: "Authentication Required",
+        description: "Please sign in to add transactions.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const parsedAmount = parseFloat(amount);
+    if (isNaN(parsedAmount) || parsedAmount <= 0) {
+      toast({
+        title: "Invalid Amount",
+        description: "Please enter a valid amount greater than 0.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    console.log('Submitting transaction:', {
+      amount: parsedAmount,
+      category,
+      description: description || undefined,
+      date,
+      type,
+    });
+
     createTransaction.mutate({
-      amount: parseFloat(amount),
+      amount: parsedAmount,
       category,
       description: description || undefined,
       date,
@@ -62,6 +109,27 @@ export const AddTransactionModal = ({ open, onOpenChange }: AddTransactionModalP
       }
     });
   };
+
+  if (!isAuthenticated && open) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Sign In Required</DialogTitle>
+          </DialogHeader>
+          
+          <div className="text-center py-6">
+            <p className="text-gray-600 mb-4">
+              You need to be signed in to add transactions.
+            </p>
+            <Button onClick={() => onOpenChange(false)}>
+              Close
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
