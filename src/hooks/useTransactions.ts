@@ -66,9 +66,12 @@ export const useTransactions = (month?: string, category?: string) => {
         return [];
       }
     },
-    retry: (failureCount, error) => {
-      // Don't retry on auth errors
-      if (error?.message?.includes('JWT') || error?.code === 'PGRST301') {
+    retry: (failureCount, error: any) => {
+      // Don't retry on auth errors or RLS violations
+      if (error?.message?.includes('JWT') || 
+          error?.message?.includes('RLS') ||
+          error?.code === 'PGRST301' || 
+          error?.code === 'PGRST116') {
         return false;
       }
       return failureCount < 2;
@@ -107,9 +110,12 @@ export const useCreateTransaction = () => {
     },
     onError: (error: any) => {
       console.error('Transaction creation failed:', error);
+      const errorMessage = error?.message || "Failed to add transaction";
       toast({
         title: "Error",
-        description: error.message || "Failed to add transaction",
+        description: errorMessage.includes('RLS') 
+          ? "Unable to save transaction. Please ensure you're logged in."
+          : errorMessage,
         variant: "destructive",
       });
     },
@@ -144,7 +150,7 @@ export const useDeleteTransaction = () => {
       console.error('Transaction deletion failed:', error);
       toast({
         title: "Error",
-        description: error.message || "Failed to delete transaction",
+        description: error?.message || "Failed to delete transaction",
         variant: "destructive",
       });
     },

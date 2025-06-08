@@ -15,7 +15,7 @@ const Transactions = () => {
   const [selectedMonth, setSelectedMonth] = useState(format(new Date(), 'yyyy-MM'));
   const [selectedCategory, setSelectedCategory] = useState('all');
 
-  const { data: transactions = [], isLoading } = useTransactions(selectedMonth, selectedCategory);
+  const { data: transactions = [], isLoading, error } = useTransactions(selectedMonth, selectedCategory);
   const deleteTransaction = useDeleteTransaction();
 
   const filteredTransactions = transactions.filter(transaction =>
@@ -66,6 +66,34 @@ const Transactions = () => {
           <div className="h-8 bg-gray-200 rounded animate-pulse mb-2"></div>
           <div className="h-4 bg-gray-200 rounded animate-pulse w-2/3"></div>
         </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-4 space-y-6 animate-fade-in">
+        <div className="pt-4">
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Transactions</h1>
+          <p className="text-gray-600">Track your income and expenses</p>
+        </div>
+        <Card>
+          <CardContent className="p-8 text-center">
+            <div className="text-center">
+              <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
+                <span className="text-2xl">⚠️</span>
+              </div>
+              <p className="text-gray-500">Unable to load transactions</p>
+              <p className="text-sm text-gray-400 mt-1">Please check your connection and try again</p>
+              <Button 
+                className="mt-4"
+                onClick={() => window.location.reload()}
+              >
+                Retry
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -162,9 +190,19 @@ const Transactions = () => {
         </CardHeader>
         <CardContent className="space-y-3">
           {filteredTransactions.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <p>No transactions found</p>
-              <p className="text-sm">Add your first transaction to get started</p>
+            <div className="text-center py-8">
+              <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
+                <span className="text-2xl">📝</span>
+              </div>
+              <p className="text-gray-500 mb-2">No transactions found</p>
+              <p className="text-sm text-gray-400 mb-4">Start tracking your money by adding your first transaction</p>
+              <Button 
+                onClick={() => setShowAddTransaction(true)}
+                className="gradient-primary"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add Transaction
+              </Button>
             </div>
           ) : (
             filteredTransactions.map((transaction) => (
