@@ -3,60 +3,23 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, Filter } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Plus, Search, Filter, Trash2 } from "lucide-react";
 import { AddTransactionModal } from "@/components/AddTransactionModal";
-
-// Mock transaction data
-const mockTransactions = [
-  {
-    id: 1,
-    amount: -45.50,
-    category: "Food & Dining",
-    description: "Lunch at Cafe Central",
-    date: "2024-06-07",
-    type: "expense" as const,
-  },
-  {
-    id: 2,
-    amount: 2500.00,
-    category: "Salary",
-    description: "Monthly salary",
-    date: "2024-06-01",
-    type: "income" as const,
-  },
-  {
-    id: 3,
-    amount: -120.00,
-    category: "Shopping",
-    description: "Grocery shopping",
-    date: "2024-06-05",
-    type: "expense" as const,
-  },
-  {
-    id: 4,
-    amount: -25.00,
-    category: "Transportation",
-    description: "Uber ride",
-    date: "2024-06-06",
-    type: "expense" as const,
-  },
-  {
-    id: 5,
-    amount: -89.99,
-    category: "Entertainment",
-    description: "Movie tickets",
-    date: "2024-06-04",
-    type: "expense" as const,
-  },
-];
+import { useTransactions, useDeleteTransaction } from "@/hooks/useTransactions";
+import { format } from "date-fns";
 
 const Transactions = () => {
   const [showAddTransaction, setShowAddTransaction] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [transactions] = useState(mockTransactions);
+  const [selectedMonth, setSelectedMonth] = useState(format(new Date(), 'yyyy-MM'));
+  const [selectedCategory, setSelectedCategory] = useState('all');
+
+  const { data: transactions = [], isLoading } = useTransactions(selectedMonth, selectedCategory);
+  const deleteTransaction = useDeleteTransaction();
 
   const filteredTransactions = transactions.filter(transaction =>
-    transaction.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    transaction.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     transaction.category.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -75,9 +38,37 @@ const Transactions = () => {
       "Entertainment": "bg-pink-100 text-pink-700",
       "Salary": "bg-green-100 text-green-700",
       "Bills & Utilities": "bg-red-100 text-red-700",
+      "Healthcare": "bg-yellow-100 text-yellow-700",
+      "Education": "bg-indigo-100 text-indigo-700",
+      "Travel": "bg-cyan-100 text-cyan-700",
+      "Freelance": "bg-emerald-100 text-emerald-700",
+      "Investment": "bg-teal-100 text-teal-700",
     };
     return colors[category] || "bg-gray-100 text-gray-700";
   };
+
+  const totalIncome = filteredTransactions
+    .filter(t => t.type === 'income')
+    .reduce((sum, t) => sum + Number(t.amount), 0);
+
+  const totalExpenses = filteredTransactions
+    .filter(t => t.type === 'expense')
+    .reduce((sum, t) => sum + Number(t.amount), 0);
+
+  const balance = totalIncome - totalExpenses;
+
+  const categories = [...new Set(transactions.map(t => t.category))];
+
+  if (isLoading) {
+    return (
+      <div className="p-4 space-y-6 animate-fade-in">
+        <div className="pt-4">
+          <div className="h-8 bg-gray-200 rounded animate-pulse mb-2"></div>
+          <div className="h-4 bg-gray-200 rounded animate-pulse w-2/3"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 space-y-6 animate-fade-in">
@@ -87,40 +78,79 @@ const Transactions = () => {
         <p className="text-gray-600">Track your income and expenses</p>
       </div>
 
-      {/* Search and Filter */}
-      <div className="flex gap-2">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-          <Input
-            placeholder="Search transactions..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
+      {/* Filters */}
+      <div className="space-y-3">
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+            <Input
+              placeholder="Search transactions..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <Button variant="outline" size="icon">
+            <Filter className="h-4 w-4" />
+          </Button>
         </div>
-        <Button variant="outline" size="icon">
-          <Filter className="h-4 w-4" />
-        </Button>
+        
+        <div className="flex gap-2">
+          <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder="Select month" />
+            </SelectTrigger>
+            <SelectContent>
+              {Array.from({ length: 12 }, (_, i) => {
+                const date = new Date();
+                date.setMonth(date.getMonth() - i);
+                const value = format(date, 'yyyy-MM');
+                const label = format(date, 'MMM yyyy');
+                return (
+                  <SelectItem key={value} value={value}>
+                    {label}
+                  </SelectItem>
+                );
+              })}
+            </SelectContent>
+          </Select>
+
+          <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder="Category" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Categories</SelectItem>
+              {categories.map((category) => (
+                <SelectItem key={category} value={category}>
+                  {category}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {/* Summary Cards */}
       <div className="grid grid-cols-3 gap-3">
         <Card>
           <CardContent className="p-4 text-center">
-            <p className="text-sm text-gray-600">This Month</p>
-            <p className="text-lg font-bold text-accent">+$2,500</p>
+            <p className="text-sm text-gray-600">Income</p>
+            <p className="text-lg font-bold text-accent">+${totalIncome.toFixed(2)}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
             <p className="text-sm text-gray-600">Expenses</p>
-            <p className="text-lg font-bold text-red-500">-$280</p>
+            <p className="text-lg font-bold text-red-500">-${totalExpenses.toFixed(2)}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
             <p className="text-sm text-gray-600">Balance</p>
-            <p className="text-lg font-bold text-primary">$2,220</p>
+            <p className={`text-lg font-bold ${balance >= 0 ? 'text-accent' : 'text-red-500'}`}>
+              ${balance.toFixed(2)}
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -131,40 +161,59 @@ const Transactions = () => {
           <CardTitle className="text-lg">Recent Transactions</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          {filteredTransactions.map((transaction) => (
-            <div
-              key={transaction.id}
-              className="flex items-center justify-between p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-primary-50 flex items-center justify-center">
-                  <span className="text-sm font-medium text-primary">
-                    {transaction.category.charAt(0)}
-                  </span>
-                </div>
-                <div>
-                  <p className="font-medium text-gray-900">{transaction.description}</p>
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={`px-2 py-1 rounded-full text-xs font-medium ${getCategoryColor(transaction.category)}`}
-                    >
-                      {transaction.category}
+          {filteredTransactions.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              <p>No transactions found</p>
+              <p className="text-sm">Add your first transaction to get started</p>
+            </div>
+          ) : (
+            filteredTransactions.map((transaction) => (
+              <div
+                key={transaction.id}
+                className="flex items-center justify-between p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-primary-50 flex items-center justify-center">
+                    <span className="text-sm font-medium text-primary">
+                      {transaction.category.charAt(0)}
                     </span>
-                    <span className="text-sm text-gray-500">{formatDate(transaction.date)}</span>
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-900">
+                      {transaction.description || transaction.category}
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`px-2 py-1 rounded-full text-xs font-medium ${getCategoryColor(transaction.category)}`}
+                      >
+                        {transaction.category}
+                      </span>
+                      <span className="text-sm text-gray-500">{formatDate(transaction.date)}</span>
+                    </div>
                   </div>
                 </div>
+                <div className="flex items-center gap-2">
+                  <div className="text-right">
+                    <p
+                      className={`font-bold text-lg ${
+                        transaction.type === "income" ? "text-accent" : "text-red-500"
+                      }`}
+                    >
+                      {transaction.type === "income" ? "+" : "-"}${Math.abs(Number(transaction.amount)).toFixed(2)}
+                    </p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => deleteTransaction.mutate(transaction.id)}
+                    className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
-              <div className="text-right">
-                <p
-                  className={`font-bold text-lg ${
-                    transaction.type === "income" ? "text-accent" : "text-red-500"
-                  }`}
-                >
-                  {transaction.type === "income" ? "+" : ""}${Math.abs(transaction.amount).toFixed(2)}
-                </p>
-              </div>
-            </div>
-          ))}
+            ))
+          )}
         </CardContent>
       </Card>
 

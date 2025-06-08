@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Wallet } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface AuthProps {
   onAuthSuccess: () => void;
@@ -21,23 +22,46 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
     e.preventDefault();
     setLoading(true);
 
-    // Mock authentication - in real app this would use Supabase
-    setTimeout(() => {
-      if (email && password) {
-        toast({
-          title: isLogin ? "Welcome back!" : "Account created!",
-          description: "You have successfully " + (isLogin ? "signed in" : "signed up"),
+    try {
+      if (isLogin) {
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
         });
-        onAuthSuccess();
-      } else {
+        
+        if (error) throw error;
+        
         toast({
-          title: "Error",
-          description: "Please fill in all fields",
-          variant: "destructive",
+          title: "Welcome back!",
+          description: "You have successfully signed in",
+        });
+      } else {
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/`
+          }
+        });
+        
+        if (error) throw error;
+        
+        toast({
+          title: "Account created!",
+          description: "Check your email to confirm your account",
         });
       }
+      
+      onAuthSuccess();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "An error occurred",
+        variant: "destructive",
+      });
+    } finally {
       setLoading(false);
-    }, 1000);
+    }
   };
 
   return (

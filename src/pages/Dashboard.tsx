@@ -1,191 +1,151 @@
 
-import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Eye, EyeOff, TrendingUp, TrendingDown } from "lucide-react";
-import { PieChart, Pie, Cell, ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip } from "recharts";
+import { Plus, ArrowUpRight, ArrowDownRight, TrendingUp } from "lucide-react";
+import { useState } from "react";
 import { AddTransactionModal } from "@/components/AddTransactionModal";
-
-const spendingData = [
-  { name: "Food", value: 800, color: "#3B82F6" },
-  { name: "Transport", value: 400, color: "#10B981" },
-  { name: "Entertainment", value: 300, color: "#F59E0B" },
-  { name: "Shopping", value: 500, color: "#EF4444" },
-];
-
-const monthlyData = [
-  { month: "Jan", income: 5000, expenses: 3200 },
-  { month: "Feb", income: 5200, expenses: 3400 },
-  { month: "Mar", income: 4800, expenses: 3100 },
-  { month: "Apr", income: 5500, expenses: 3800 },
-  { month: "May", income: 5300, expenses: 3600 },
-  { month: "Jun", income: 5600, expenses: 4200 },
-];
+import { useTransactions } from "@/hooks/useTransactions";
+import { TransactionChart } from "@/components/TransactionChart";
+import { format } from "date-fns";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 
 const Dashboard = () => {
-  const [balanceVisible, setBalanceVisible] = useState(true);
   const [showAddTransaction, setShowAddTransaction] = useState(false);
+  const currentMonth = format(new Date(), 'yyyy-MM');
+  const { data: transactions = [], isLoading } = useTransactions(currentMonth);
 
-  const balance = 2840.50;
-  const monthlyIncome = 5600;
-  const monthlyExpenses = 4200;
-  const savings = monthlyIncome - monthlyExpenses;
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    toast({
+      title: "Signed out",
+      description: "You have been signed out successfully",
+    });
+  };
+
+  // Calculate totals for current month
+  const totalIncome = transactions
+    .filter(t => t.type === 'income')
+    .reduce((sum, t) => sum + Number(t.amount), 0);
+
+  const totalExpenses = transactions
+    .filter(t => t.type === 'expense')
+    .reduce((sum, t) => sum + Number(t.amount), 0);
+
+  const balance = totalIncome - totalExpenses;
+
+  // Recent transactions (last 5)
+  const recentTransactions = transactions.slice(0, 5);
+
+  if (isLoading) {
+    return (
+      <div className="p-4 space-y-6 animate-fade-in">
+        <div className="pt-4">
+          <div className="h-8 bg-gray-200 rounded animate-pulse mb-2"></div>
+          <div className="h-4 bg-gray-200 rounded animate-pulse w-2/3"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 space-y-6 animate-fade-in">
       {/* Header */}
-      <div className="flex justify-between items-center pt-4">
+      <div className="pt-4 flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Good morning! 👋</h1>
-          <p className="text-gray-600">Here's your financial overview</p>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Dashboard</h1>
+          <p className="text-gray-600">Welcome back to WalletWise</p>
         </div>
+        <Button variant="outline" onClick={handleSignOut}>
+          Sign Out
+        </Button>
       </div>
 
       {/* Balance Card */}
-      <Card className="gradient-card border-0 shadow-lg">
+      <Card className="gradient-primary text-white">
         <CardContent className="p-6">
-          <div className="flex justify-between items-start mb-4">
+          <div className="flex justify-between items-center">
             <div>
-              <p className="text-sm text-gray-600 mb-1">Total Balance</p>
-              <div className="flex items-center gap-3">
-                <h2 className="text-3xl font-bold text-gray-900">
-                  {balanceVisible ? `$${balance.toLocaleString()}` : "••••••"}
-                </h2>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setBalanceVisible(!balanceVisible)}
-                  className="p-1 h-8 w-8"
-                >
-                  {balanceVisible ? <EyeOff size={16} /> : <Eye size={16} />}
-                </Button>
-              </div>
+              <p className="text-blue-100 mb-2">Current Balance</p>
+              <p className="text-3xl font-bold">${balance.toFixed(2)}</p>
+              <p className="text-blue-100 text-sm mt-1">
+                {format(new Date(), 'MMMM yyyy')}
+              </p>
             </div>
-            <div className="text-right">
-              <div className="flex items-center gap-1 text-accent">
-                <TrendingUp size={16} />
-                <span className="text-sm font-medium">+12.5%</span>
-              </div>
-              <p className="text-xs text-gray-500">vs last month</p>
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-2 gap-4">
-            <div className="p-3 bg-white/50 rounded-lg">
-              <p className="text-xs text-gray-600">Monthly Income</p>
-              <p className="text-lg font-semibold text-accent">${monthlyIncome.toLocaleString()}</p>
-            </div>
-            <div className="p-3 bg-white/50 rounded-lg">
-              <p className="text-xs text-gray-600">Monthly Expenses</p>
-              <p className="text-lg font-semibold text-red-500">${monthlyExpenses.toLocaleString()}</p>
-            </div>
+            <TrendingUp className="h-8 w-8 text-blue-200" />
           </div>
         </CardContent>
       </Card>
 
-      {/* Quick Stats */}
+      {/* Income & Expenses Cards */}
       <div className="grid grid-cols-2 gap-4">
         <Card>
           <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-accent-50 rounded-lg">
-                <TrendingUp className="h-5 w-5 text-accent" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">Savings</p>
-                <p className="text-lg font-semibold text-gray-900">${savings.toLocaleString()}</p>
-              </div>
+            <div className="flex items-center gap-2 text-accent mb-2">
+              <ArrowUpRight className="h-4 w-4" />
+              <span className="text-sm font-medium">Income</span>
             </div>
+            <p className="text-2xl font-bold">${totalIncome.toFixed(2)}</p>
+            <p className="text-xs text-gray-500">This month</p>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-primary-50 rounded-lg">
-                <TrendingDown className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">Avg. Daily</p>
-                <p className="text-lg font-semibold text-gray-900">${(monthlyExpenses / 30).toFixed(0)}</p>
-              </div>
+            <div className="flex items-center gap-2 text-red-500 mb-2">
+              <ArrowDownRight className="h-4 w-4" />
+              <span className="text-sm font-medium">Expenses</span>
             </div>
+            <p className="text-2xl font-bold">${totalExpenses.toFixed(2)}</p>
+            <p className="text-xs text-gray-500">This month</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Spending Breakdown */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Spending Breakdown</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={spendingData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={100}
-                  paddingAngle={5}
-                  dataKey="value"
-                >
-                  {spendingData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip formatter={(value) => [`$${value}`, "Amount"]} />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="grid grid-cols-2 gap-2 mt-4">
-            {spendingData.map((item, index) => (
-              <div key={index} className="flex items-center gap-2">
-                <div
-                  className="w-3 h-3 rounded-full"
-                  style={{ backgroundColor: item.color }}
-                />
-                <span className="text-sm text-gray-600">{item.name}</span>
-                <span className="text-sm font-medium ml-auto">${item.value}</span>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+      {/* Spending Chart */}
+      <TransactionChart transactions={transactions} />
 
-      {/* Monthly Trend */}
+      {/* Recent Transactions */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Monthly Trend</CardTitle>
+          <CardTitle className="text-lg">Recent Transactions</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="h-48">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={monthlyData}>
-                <XAxis dataKey="month" axisLine={false} tickLine={false} />
-                <YAxis hide />
-                <Tooltip 
-                  formatter={(value, name) => [`$${value}`, name === 'income' ? 'Income' : 'Expenses']}
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="income" 
-                  stroke="#10B981" 
-                  strokeWidth={3}
-                  dot={{ fill: "#10B981", strokeWidth: 2, r: 4 }}
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="expenses" 
-                  stroke="#EF4444" 
-                  strokeWidth={3}
-                  dot={{ fill: "#EF4444", strokeWidth: 2, r: 4 }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
+          {recentTransactions.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              <p>No transactions yet</p>
+              <p className="text-sm">Add your first transaction to get started</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {recentTransactions.map((transaction) => (
+                <div key={transaction.id} className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-primary-50 flex items-center justify-center">
+                      <span className="text-xs font-medium text-primary">
+                        {transaction.category.charAt(0)}
+                      </span>
+                    </div>
+                    <div>
+                      <p className="font-medium text-sm">
+                        {transaction.description || transaction.category}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {new Date(transaction.date).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+                  <p
+                    className={`font-bold text-sm ${
+                      transaction.type === "income" ? "text-accent" : "text-red-500"
+                    }`}
+                  >
+                    {transaction.type === "income" ? "+" : "-"}${Math.abs(Number(transaction.amount)).toFixed(2)}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
 

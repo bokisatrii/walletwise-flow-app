@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { toast } from "@/hooks/use-toast";
+import { useCreateTransaction } from "@/hooks/useTransactions";
 
 interface AddTransactionModalProps {
   open: boolean;
@@ -22,6 +22,9 @@ const categories = [
   "Healthcare",
   "Education",
   "Travel",
+  "Salary",
+  "Freelance",
+  "Investment",
   "Other",
 ];
 
@@ -32,31 +35,32 @@ export const AddTransactionModal = ({ open, onOpenChange }: AddTransactionModalP
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [type, setType] = useState<"expense" | "income">("expense");
 
+  const createTransaction = useCreateTransaction();
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!amount || !category) {
-      toast({
-        title: "Error",
-        description: "Please fill in all required fields",
-        variant: "destructive",
-      });
       return;
     }
 
-    // Mock save - in real app this would save to Supabase
-    toast({
-      title: "Transaction added!",
-      description: `${type === 'income' ? 'Income' : 'Expense'} of $${amount} has been recorded`,
+    createTransaction.mutate({
+      amount: parseFloat(amount),
+      category,
+      description: description || undefined,
+      date,
+      type,
+    }, {
+      onSuccess: () => {
+        // Reset form
+        setAmount("");
+        setCategory("");
+        setDescription("");
+        setDate(new Date().toISOString().split('T')[0]);
+        setType("expense");
+        onOpenChange(false);
+      }
     });
-
-    // Reset form
-    setAmount("");
-    setCategory("");
-    setDescription("");
-    setDate(new Date().toISOString().split('T')[0]);
-    setType("expense");
-    onOpenChange(false);
   };
 
   return (
@@ -137,11 +141,20 @@ export const AddTransactionModal = ({ open, onOpenChange }: AddTransactionModalP
           </div>
 
           <div className="flex gap-2 pt-4">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="flex-1">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => onOpenChange(false)} 
+              className="flex-1"
+            >
               Cancel
             </Button>
-            <Button type="submit" className="flex-1">
-              Add Transaction
+            <Button 
+              type="submit" 
+              className="flex-1"
+              disabled={createTransaction.isPending}
+            >
+              {createTransaction.isPending ? "Adding..." : "Add Transaction"}
             </Button>
           </div>
         </form>
