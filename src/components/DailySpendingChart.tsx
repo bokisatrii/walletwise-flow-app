@@ -107,7 +107,7 @@ export const DailySpendingChart = ({ transactions, currentMonth }: DailySpending
               />
               <Tooltip content={<CustomTooltip />} />
               <Line 
-                type="basis" 
+                type="monotone" 
                 dataKey="expenses" 
                 stroke="#4169E1" 
                 strokeWidth={3}
@@ -117,7 +117,7 @@ export const DailySpendingChart = ({ transactions, currentMonth }: DailySpending
                 animationDuration={1000}
               />
               <Line 
-                type="basis" 
+                type="monotone" 
                 dataKey="average" 
                 stroke="#9CA3AF" 
                 strokeWidth={2}
