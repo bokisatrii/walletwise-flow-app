@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,6 +9,7 @@ import { AddTransactionModal } from "@/components/AddTransactionModal";
 import { EditTransactionModal } from "@/components/EditTransactionModal";
 import { DailySpendingChart } from "@/components/DailySpendingChart";
 import { useTransactions, useDeleteTransaction, Transaction } from "@/hooks/useTransactions";
+import { useCurrency } from "@/contexts/CurrencyContext";
 import { format } from "date-fns";
 
 const Transactions = () => {
@@ -20,6 +22,7 @@ const Transactions = () => {
 
   const { data: transactions = [], isLoading, error } = useTransactions(selectedMonth, selectedCategory);
   const deleteTransaction = useDeleteTransaction();
+  const { displayCurrency, convertAmount, formatAmount } = useCurrency();
 
   // Get current month transactions for the chart
   const currentMonth = format(new Date(), 'yyyy-MM');
@@ -59,13 +62,24 @@ const Transactions = () => {
     setShowEditTransaction(true);
   };
 
+  const getDisplayAmount = (transaction: Transaction) => {
+    const convertedAmount = convertAmount(Number(transaction.amount), transaction.currency, displayCurrency);
+    return formatAmount(convertedAmount, displayCurrency);
+  };
+
   const totalIncome = filteredTransactions
     .filter(t => t.type === 'income')
-    .reduce((sum, t) => sum + Number(t.amount), 0);
+    .reduce((sum, t) => {
+      const convertedAmount = convertAmount(Number(t.amount), t.currency, displayCurrency);
+      return sum + convertedAmount;
+    }, 0);
 
   const totalExpenses = filteredTransactions
     .filter(t => t.type === 'expense')
-    .reduce((sum, t) => sum + Number(t.amount), 0);
+    .reduce((sum, t) => {
+      const convertedAmount = convertAmount(Number(t.amount), t.currency, displayCurrency);
+      return sum + convertedAmount;
+    }, 0);
 
   const balance = totalIncome - totalExpenses;
 
@@ -179,20 +193,20 @@ const Transactions = () => {
         <Card>
           <CardContent className="p-4 text-center">
             <p className="text-sm text-gray-600">Income</p>
-            <p className="text-lg font-bold text-accent">+${totalIncome.toFixed(2)}</p>
+            <p className="text-lg font-bold text-accent">+{formatAmount(totalIncome, displayCurrency)}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
             <p className="text-sm text-gray-600">Expenses</p>
-            <p className="text-lg font-bold text-red-500">-${totalExpenses.toFixed(2)}</p>
+            <p className="text-lg font-bold text-red-500">-{formatAmount(totalExpenses, displayCurrency)}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
             <p className="text-sm text-gray-600">Balance</p>
             <p className={`text-lg font-bold ${balance >= 0 ? 'text-accent' : 'text-red-500'}`}>
-              ${balance.toFixed(2)}
+              {formatAmount(balance, displayCurrency)}
             </p>
           </CardContent>
         </Card>
@@ -242,6 +256,9 @@ const Transactions = () => {
                         {transaction.category}
                       </span>
                       <span className="text-sm text-gray-500">{formatDate(transaction.date)}</span>
+                      {transaction.currency !== displayCurrency && (
+                        <span className="text-xs text-gray-400">({transaction.currency})</span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -252,7 +269,7 @@ const Transactions = () => {
                         transaction.type === "income" ? "text-accent" : "text-red-500"
                       }`}
                     >
-                      {transaction.type === "income" ? "+" : "-"}${Math.abs(Number(transaction.amount)).toFixed(2)}
+                      {transaction.type === "income" ? "+" : "-"}{getDisplayAmount(transaction)}
                     </p>
                   </div>
                   <Button

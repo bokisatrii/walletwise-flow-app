@@ -1,7 +1,7 @@
-
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { Currency } from "@/contexts/CurrencyContext";
 
 export interface Transaction {
   id: string;
@@ -10,6 +10,7 @@ export interface Transaction {
   description: string | null;
   date: string;
   type: 'income' | 'expense';
+  currency: Currency;
   created_at: string;
   updated_at: string;
   user_id: string;
@@ -22,6 +23,7 @@ export interface TransactionInsert {
   description?: string;
   date: string;
   type: 'income' | 'expense';
+  currency: Currency;
 }
 
 export interface TransactionUpdate {
@@ -30,6 +32,7 @@ export interface TransactionUpdate {
   description?: string;
   date?: string;
   type?: 'income' | 'expense';
+  currency?: Currency;
 }
 
 export const useTransactions = (month?: string, category?: string) => {

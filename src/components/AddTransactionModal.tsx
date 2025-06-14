@@ -10,6 +10,7 @@ import { useCreateTransaction } from "@/hooks/useTransactions";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect } from "react";
 import { toast } from "@/hooks/use-toast";
+import { Currency, useCurrency } from "@/contexts/CurrencyContext";
 
 interface AddTransactionModalProps {
   open: boolean;
@@ -31,15 +32,23 @@ const categories = [
   "Other",
 ];
 
+const currencies: { value: Currency; label: string; symbol: string }[] = [
+  { value: 'EUR', label: 'Euro', symbol: '€' },
+  { value: 'USD', label: 'Dollar', symbol: '$' },
+  { value: 'RSD', label: 'Dinar', symbol: 'RSD' }
+];
+
 export const AddTransactionModal = ({ open, onOpenChange }: AddTransactionModalProps) => {
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState("");
   const [description, setDescription] = useState("");
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [type, setType] = useState<"expense" | "income">("expense");
+  const [selectedCurrency, setSelectedCurrency] = useState<Currency>("EUR");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   const createTransaction = useCreateTransaction();
+  const { displayCurrency, convertAmount, formatAmount } = useCurrency();
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -49,8 +58,9 @@ export const AddTransactionModal = ({ open, onOpenChange }: AddTransactionModalP
     
     if (open) {
       checkAuth();
+      setSelectedCurrency(displayCurrency);
     }
-  }, [open]);
+  }, [open, displayCurrency]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -89,6 +99,7 @@ export const AddTransactionModal = ({ open, onOpenChange }: AddTransactionModalP
       description: description || undefined,
       date,
       type,
+      currency: selectedCurrency,
     });
 
     createTransaction.mutate({
@@ -97,6 +108,7 @@ export const AddTransactionModal = ({ open, onOpenChange }: AddTransactionModalP
       description: description || undefined,
       date,
       type,
+      currency: selectedCurrency,
     }, {
       onSuccess: () => {
         // Reset form
@@ -105,6 +117,7 @@ export const AddTransactionModal = ({ open, onOpenChange }: AddTransactionModalP
         setDescription("");
         setDate(new Date().toISOString().split('T')[0]);
         setType("expense");
+        setSelectedCurrency(displayCurrency);
         onOpenChange(false);
       }
     });
@@ -130,6 +143,8 @@ export const AddTransactionModal = ({ open, onOpenChange }: AddTransactionModalP
       </Dialog>
     );
   }
+
+  const convertedAmount = amount ? convertAmount(parseFloat(amount), selectedCurrency, displayCurrency) : 0;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -158,18 +173,41 @@ export const AddTransactionModal = ({ open, onOpenChange }: AddTransactionModalP
             </Button>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="amount">Amount *</Label>
-            <Input
-              id="amount"
-              type="number"
-              step="0.01"
-              placeholder="0.00"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              required
-            />
+          <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-2">
+              <Label htmlFor="amount">Amount *</Label>
+              <Input
+                id="amount"
+                type="number"
+                step="0.01"
+                placeholder="0.00"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="currency">Currency</Label>
+              <Select value={selectedCurrency} onValueChange={setSelectedCurrency}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {currencies.map((currency) => (
+                    <SelectItem key={currency.value} value={currency.value}>
+                      {currency.symbol}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
+
+          {amount && selectedCurrency !== displayCurrency && (
+            <div className="text-sm text-gray-600 bg-gray-50 p-2 rounded">
+              ≈ {formatAmount(convertedAmount, displayCurrency)}
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label htmlFor="category">Category *</Label>

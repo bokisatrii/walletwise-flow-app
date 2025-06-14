@@ -1,67 +1,54 @@
 
-import { Toaster } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter } from "react-router-dom";
-import { AuthProvider, useAuth } from "@/providers/AuthProvider";
-import { AppRoutes } from "@/config/routes";
-import { AuthFallback } from "@/components/AuthFallback";
-import { useSubscriptionReminders } from "@/hooks/useSubscriptionReminders";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { ThemeProvider } from "next-themes";
+import { Toaster } from "sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { AuthProvider } from "@/providers/AuthProvider";
+import { CurrencyProvider } from "@/contexts/CurrencyContext";
+import Layout from "@/components/Layout";
+import { Toaster as ShadcnToaster } from "@/components/ui/toaster";
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: (failureCount, error: any) => {
-        // Don't retry on authentication errors
-        if (error?.message?.includes('JWT') || error?.code === 'PGRST301') {
-          return false;
-        }
-        return failureCount < 2;
-      },
-      staleTime: 1000 * 60 * 5, // 5 minutes
-    },
-  },
-});
+import Index from "@/pages/Index";
+import Dashboard from "@/pages/Dashboard";
+import Transactions from "@/pages/Transactions";
+import Subscriptions from "@/pages/Subscriptions";
+import Insights from "@/pages/Insights";
+import Auth from "@/pages/Auth";
+import NotFound from "@/pages/NotFound";
 
-const AppContent = () => {
-  const { session, loading, error } = useAuth();
-  
-  // Initialize subscription reminders
-  useSubscriptionReminders();
+const queryClient = new QueryClient();
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-blue-50">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <AuthFallback 
-        error={error} 
-        onRetry={() => window.location.reload()} 
-      />
-    );
-  }
-
-  return <AppRoutes session={session} />;
-};
-
-const App = () => {
+function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <BrowserRouter>
+      <ThemeProvider attribute="class" defaultTheme="light">
+        <TooltipProvider>
           <AuthProvider>
-            <AppContent />
+            <CurrencyProvider>
+              <Router>
+                <div className="min-h-screen bg-background">
+                  <Routes>
+                    <Route path="/" element={<Layout />}>
+                      <Route index element={<Index />} />
+                      <Route path="dashboard" element={<Dashboard />} />
+                      <Route path="transactions" element={<Transactions />} />
+                      <Route path="subscriptions" element={<Subscriptions />} />
+                      <Route path="insights" element={<Insights />} />
+                    </Route>
+                    <Route path="/auth" element={<Auth />} />
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                  <Toaster />
+                  <ShadcnToaster />
+                </div>
+              </Router>
+            </CurrencyProvider>
           </AuthProvider>
-        </BrowserRouter>
-      </TooltipProvider>
+        </TooltipProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
-};
+}
 
 export default App;
