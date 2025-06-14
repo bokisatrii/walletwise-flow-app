@@ -70,8 +70,8 @@ export const DailySpendingChart = ({ transactions, currentMonth }: DailySpending
         <div className="bg-white p-4 border border-gray-200 rounded-lg shadow-lg">
           <p className="font-semibold text-gray-800 mb-2">Day {label}</p>
           <div className="space-y-1">
-            <p className="text-red-600 flex items-center gap-2">
-              <span className="w-3 h-3 bg-red-500 rounded-full"></span>
+            <p className="text-blue-600 flex items-center gap-2">
+              <span className="w-3 h-3 bg-blue-600 rounded-full"></span>
               Expenses: <span className="font-medium">{formatAmount(data.expenses, displayCurrency)}</span>
             </p>
             <p className="text-gray-500 flex items-center gap-2">
@@ -110,10 +110,10 @@ export const DailySpendingChart = ({ transactions, currentMonth }: DailySpending
               <Line 
                 type="monotone" 
                 dataKey="expenses" 
-                stroke="#EF4444" 
+                stroke="#4169E1" 
                 strokeWidth={3}
-                dot={{ fill: '#EF4444', strokeWidth: 2, r: 2 }}
-                activeDot={{ r: 4, stroke: '#EF4444', strokeWidth: 2 }}
+                dot={{ fill: '#4169E1', strokeWidth: 2, r: 2 }}
+                activeDot={{ r: 4, stroke: '#4169E1', strokeWidth: 2 }}
                 animationDuration={1000}
               />
               <Line 
