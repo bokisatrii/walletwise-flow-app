@@ -8,7 +8,6 @@ import { useTransactions } from "@/hooks/useTransactions";
 import { TransactionChart } from "@/components/TransactionChart";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/hooks/use-toast";
 import { useCurrency, Currency } from "@/contexts/CurrencyContext";
 
 const Dashboard = () => {
@@ -51,23 +50,6 @@ const Dashboard = () => {
     
     checkDemoUser();
   }, []);
-
-  const handleSignOut = async () => {
-    try {
-      await supabase.auth.signOut();
-      toast({
-        title: "Signed out",
-        description: "You have been signed out successfully",
-      });
-    } catch (error) {
-      console.error('Sign out error:', error);
-      toast({
-        title: "Error",
-        description: "Failed to sign out",
-        variant: "destructive",
-      });
-    }
-  };
 
   // Calculate totals for current month with currency conversion
   console.log('Calculating totals...');
@@ -149,16 +131,13 @@ const Dashboard = () => {
       )}
 
       {/* Header */}
-      <div className="pt-4 flex justify-between items-center">
+      <div className="pt-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Dashboard</h1>
           <p className="text-gray-600">
             {isDemo ? "Welcome to WalletWise Demo" : `Welcome back${userEmail ? ` ${userEmail.split('@')[0]}` : ''}`}
           </p>
         </div>
-        <Button variant="outline" onClick={handleSignOut}>
-          Sign Out
-        </Button>
       </div>
 
       {/* Balance Card */}
