@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, Search, Filter, Trash2, Edit } from "lucide-react";
 import { AddTransactionModal } from "@/components/AddTransactionModal";
 import { EditTransactionModal } from "@/components/EditTransactionModal";
+import { DailySpendingChart } from "@/components/DailySpendingChart";
 import { useTransactions, useDeleteTransaction, Transaction } from "@/hooks/useTransactions";
 import { format } from "date-fns";
 
@@ -19,6 +20,10 @@ const Transactions = () => {
 
   const { data: transactions = [], isLoading, error } = useTransactions(selectedMonth, selectedCategory);
   const deleteTransaction = useDeleteTransaction();
+
+  // Get current month transactions for the chart
+  const currentMonth = format(new Date(), 'yyyy-MM');
+  const { data: currentMonthTransactions = [] } = useTransactions(currentMonth, 'all');
 
   const filteredTransactions = transactions.filter(transaction =>
     transaction.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -112,6 +117,9 @@ const Transactions = () => {
         <h1 className="text-2xl font-bold text-gray-900 mb-2">Transactions</h1>
         <p className="text-gray-600">Track your income and expenses</p>
       </div>
+
+      {/* Daily Spending Chart */}
+      <DailySpendingChart transactions={currentMonthTransactions} />
 
       {/* Filters */}
       <div className="space-y-3">
