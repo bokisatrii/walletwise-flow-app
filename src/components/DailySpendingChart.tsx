@@ -25,6 +25,20 @@ export const DailySpendingChart = ({ transactions, currentMonth }: DailySpending
   const monthEnd = endOfMonth(currentMonth);
   const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
 
+  // Calculate average daily expenses for the month
+  const totalExpenses = transactions
+    .filter(t => t.type === 'expense')
+    .reduce((sum, t) => {
+      const convertedAmount = convertAmount(
+        Number(t.amount), 
+        (t.currency as any) || 'EUR', 
+        displayCurrency
+      );
+      return sum + convertedAmount;
+    }, 0);
+  
+  const averageDailyExpenses = totalExpenses / daysInMonth.length;
+
   // Group transactions by day and convert to display currency
   const dailyData = daysInMonth.map(day => {
     const dayStr = format(day, 'yyyy-MM-dd');
@@ -41,23 +55,11 @@ export const DailySpendingChart = ({ transactions, currentMonth }: DailySpending
         return sum + convertedAmount;
       }, 0);
 
-    const income = dayTransactions
-      .filter(t => t.type === 'income')
-      .reduce((sum, t) => {
-        const convertedAmount = convertAmount(
-          Number(t.amount), 
-          (t.currency as any) || 'EUR', 
-          displayCurrency
-        );
-        return sum + convertedAmount;
-      }, 0);
-
     return {
       day: format(day, 'd'),
       date: dayStr,
       expenses,
-      income,
-      net: income - expenses
+      average: averageDailyExpenses
     };
   });
 
@@ -72,13 +74,9 @@ export const DailySpendingChart = ({ transactions, currentMonth }: DailySpending
               <span className="w-3 h-3 bg-red-500 rounded-full"></span>
               Expenses: <span className="font-medium">{formatAmount(data.expenses, displayCurrency)}</span>
             </p>
-            <p className="text-green-600 flex items-center gap-2">
-              <span className="w-3 h-3 bg-green-500 rounded-full"></span>
-              Income: <span className="font-medium">{formatAmount(data.income, displayCurrency)}</span>
-            </p>
-            <p className="text-blue-600 flex items-center gap-2">
-              <span className="w-3 h-3 bg-blue-500 rounded-full"></span>
-              Net: <span className="font-medium">{formatAmount(data.net, displayCurrency)}</span>
+            <p className="text-gray-500 flex items-center gap-2">
+              <span className="w-3 h-3 bg-gray-400 rounded-full"></span>
+              Average: <span className="font-medium">{formatAmount(data.average, displayCurrency)}</span>
             </p>
           </div>
         </div>
@@ -114,27 +112,18 @@ export const DailySpendingChart = ({ transactions, currentMonth }: DailySpending
                 dataKey="expenses" 
                 stroke="#EF4444" 
                 strokeWidth={3}
-                dot={{ fill: '#EF4444', strokeWidth: 2, r: 4 }}
-                activeDot={{ r: 6, stroke: '#EF4444', strokeWidth: 2 }}
+                dot={{ fill: '#EF4444', strokeWidth: 2, r: 2 }}
+                activeDot={{ r: 4, stroke: '#EF4444', strokeWidth: 2 }}
                 animationDuration={1000}
               />
               <Line 
                 type="monotone" 
-                dataKey="income" 
-                stroke="#10B981" 
-                strokeWidth={3}
-                dot={{ fill: '#10B981', strokeWidth: 2, r: 4 }}
-                activeDot={{ r: 6, stroke: '#10B981', strokeWidth: 2 }}
-                animationDuration={1000}
-              />
-              <Line 
-                type="monotone" 
-                dataKey="net" 
-                stroke="#3B82F6" 
+                dataKey="average" 
+                stroke="#9CA3AF" 
                 strokeWidth={2}
                 strokeDasharray="5 5"
-                dot={{ fill: '#3B82F6', strokeWidth: 2, r: 3 }}
-                activeDot={{ r: 5, stroke: '#3B82F6', strokeWidth: 2 }}
+                dot={false}
+                activeDot={{ r: 3, stroke: '#9CA3AF', strokeWidth: 2 }}
                 animationDuration={1000}
               />
             </LineChart>
