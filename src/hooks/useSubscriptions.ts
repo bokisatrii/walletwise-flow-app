@@ -16,6 +16,14 @@ export interface Subscription {
   updated_at: string;
 }
 
+export interface SubscriptionUpdate {
+  name?: string;
+  amount?: number;
+  next_payment_date?: string;
+  description?: string | null;
+  renewal_interval?: string | null;
+}
+
 export const useSubscriptions = () => {
   const { session } = useAuth();
   const queryClient = useQueryClient();
@@ -63,6 +71,31 @@ export const useSubscriptions = () => {
     },
   });
 
+  const updateSubscriptionMutation = useMutation({
+    mutationFn: async ({ id, updates }: { id: string; updates: SubscriptionUpdate }) => {
+      if (!session?.user?.id) throw new Error("No user session");
+
+      const { data, error } = await supabase
+        .from("subscriptions")
+        .update(updates)
+        .eq("id", id)
+        .eq("user_id", session.user.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["subscriptions"] });
+      toast.success("Subscription updated successfully!");
+    },
+    onError: (error) => {
+      console.error("Error updating subscription:", error);
+      toast.error("Failed to update subscription");
+    },
+  });
+
   const deleteSubscriptionMutation = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
@@ -87,8 +120,10 @@ export const useSubscriptions = () => {
     isLoading: subscriptionsQuery.isLoading,
     error: subscriptionsQuery.error,
     addSubscription: addSubscriptionMutation.mutate,
+    updateSubscription: updateSubscriptionMutation.mutate,
     deleteSubscription: deleteSubscriptionMutation.mutate,
     isAddingSubscription: addSubscriptionMutation.isPending,
+    isUpdatingSubscription: updateSubscriptionMutation.isPending,
     isDeletingSubscription: deleteSubscriptionMutation.isPending,
   };
 };

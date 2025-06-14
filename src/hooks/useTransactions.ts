@@ -24,6 +24,14 @@ export interface TransactionInsert {
   type: 'income' | 'expense';
 }
 
+export interface TransactionUpdate {
+  amount?: number;
+  category?: string;
+  description?: string;
+  date?: string;
+  type?: 'income' | 'expense';
+}
+
 export const useTransactions = (month?: string, category?: string) => {
   return useQuery({
     queryKey: ['transactions', month, category],
@@ -132,6 +140,61 @@ export const useCreateTransaction = () => {
         errorMessage = "Please sign in to add transactions";
       } else if (error?.message?.includes('RLS') || error?.message?.includes('row-level security')) {
         errorMessage = "Unable to save transaction. Please ensure you're logged in.";
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    },
+  });
+};
+
+export const useUpdateTransaction = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, updates }: { id: string; updates: TransactionUpdate }) => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          throw new Error('You must be logged in to update transactions');
+        }
+
+        const { data, error } = await supabase
+          .from('transactions')
+          .update(updates)
+          .eq('id', id)
+          .select()
+          .single();
+
+        if (error) {
+          console.error('Update transaction error:', error);
+          throw error;
+        }
+
+        return data as Transaction;
+      } catch (error) {
+        console.error('Update transaction error:', error);
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      toast({
+        title: "Transaction updated!",
+        description: "Your transaction has been updated successfully",
+      });
+    },
+    onError: (error: any) => {
+      console.error('Transaction update failed:', error);
+      let errorMessage = "Failed to update transaction";
+      
+      if (error?.message?.includes('JWT') || error?.code === 'PGRST301') {
+        errorMessage = "Please sign in to update transactions";
       } else if (error?.message) {
         errorMessage = error.message;
       }

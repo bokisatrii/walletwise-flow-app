@@ -3,14 +3,17 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Calendar, DollarSign, Trash2 } from "lucide-react";
+import { Plus, Calendar, DollarSign, Trash2, Edit } from "lucide-react";
 import { AddSubscriptionForm } from "@/components/AddSubscriptionForm";
+import { EditSubscriptionModal } from "@/components/EditSubscriptionModal";
 import { SubscriptionCalendar } from "@/components/SubscriptionCalendar";
-import { useSubscriptions } from "@/hooks/useSubscriptions";
+import { useSubscriptions, Subscription } from "@/hooks/useSubscriptions";
 import { format, parseISO } from "date-fns";
 
 const Subscriptions = () => {
   const [showAddSubscription, setShowAddSubscription] = useState(false);
+  const [showEditSubscription, setShowEditSubscription] = useState(false);
+  const [editingSubscription, setEditingSubscription] = useState<Subscription | null>(null);
   const { 
     subscriptions, 
     isLoading, 
@@ -23,6 +26,11 @@ const Subscriptions = () => {
 
   const formatDate = (dateString: string) => {
     return format(parseISO(dateString), 'MMM d, yyyy');
+  };
+
+  const handleEditSubscription = (subscription: Subscription) => {
+    setEditingSubscription(subscription);
+    setShowEditSubscription(true);
   };
 
   if (isLoading) {
@@ -102,7 +110,7 @@ const Subscriptions = () => {
                     <TableHead>Frequency</TableHead>
                     <TableHead>Next Payment</TableHead>
                     <TableHead className="hidden sm:table-cell">Description</TableHead>
-                    <TableHead className="w-[50px]"></TableHead>
+                    <TableHead className="w-[100px]">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -120,15 +128,25 @@ const Subscriptions = () => {
                         {subscription.description || "—"}
                       </TableCell>
                       <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => deleteSubscription(subscription.id)}
-                          disabled={isDeletingSubscription}
-                          className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        <div className="flex gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEditSubscription(subscription)}
+                            className="h-8 w-8 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => deleteSubscription(subscription.id)}
+                            disabled={isDeletingSubscription}
+                            className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -155,6 +173,12 @@ const Subscriptions = () => {
       <AddSubscriptionForm 
         open={showAddSubscription}
         onOpenChange={setShowAddSubscription}
+      />
+
+      <EditSubscriptionModal 
+        open={showEditSubscription}
+        onOpenChange={setShowEditSubscription}
+        subscription={editingSubscription}
       />
     </div>
   );

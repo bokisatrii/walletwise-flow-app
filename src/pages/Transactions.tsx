@@ -1,16 +1,18 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Search, Filter, Trash2 } from "lucide-react";
+import { Plus, Search, Filter, Trash2, Edit } from "lucide-react";
 import { AddTransactionModal } from "@/components/AddTransactionModal";
-import { useTransactions, useDeleteTransaction } from "@/hooks/useTransactions";
+import { EditTransactionModal } from "@/components/EditTransactionModal";
+import { useTransactions, useDeleteTransaction, Transaction } from "@/hooks/useTransactions";
 import { format } from "date-fns";
 
 const Transactions = () => {
   const [showAddTransaction, setShowAddTransaction] = useState(false);
+  const [showEditTransaction, setShowEditTransaction] = useState(false);
+  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedMonth, setSelectedMonth] = useState(format(new Date(), 'yyyy-MM'));
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -45,6 +47,11 @@ const Transactions = () => {
       "Investment": "bg-teal-100 text-teal-700",
     };
     return colors[category] || "bg-gray-100 text-gray-700";
+  };
+
+  const handleEditTransaction = (transaction: Transaction) => {
+    setEditingTransaction(transaction);
+    setShowEditTransaction(true);
   };
 
   const totalIncome = filteredTransactions
@@ -243,6 +250,14 @@ const Transactions = () => {
                   <Button
                     variant="ghost"
                     size="sm"
+                    onClick={() => handleEditTransaction(transaction)}
+                    className="text-blue-500 hover:text-blue-700 hover:bg-blue-50"
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={() => deleteTransaction.mutate(transaction.id)}
                     className="text-red-500 hover:text-red-700 hover:bg-red-50"
                   >
@@ -266,6 +281,12 @@ const Transactions = () => {
       <AddTransactionModal 
         open={showAddTransaction}
         onOpenChange={setShowAddTransaction}
+      />
+
+      <EditTransactionModal 
+        open={showEditTransaction}
+        onOpenChange={setShowEditTransaction}
+        transaction={editingTransaction}
       />
     </div>
   );
