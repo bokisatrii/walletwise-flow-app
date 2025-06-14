@@ -37,6 +37,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   useEffect(() => {
     let mounted = true;
+    console.log('AuthProvider: Starting auth initialization...');
 
     const initializeAuth = async () => {
       try {
@@ -44,11 +45,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
           async (event, session) => {
             if (mounted) {
-              console.log('Auth state changed:', event, session?.user?.email);
+              console.log('AuthProvider: Auth state changed:', event, session?.user?.email || 'no user');
               
               // Track if this is a new session (sign in)
               if (event === 'SIGNED_IN' && session) {
                 setIsNewSession(true);
+                console.log('AuthProvider: New session detected');
                 // Reset the flag after a short delay to allow components to react
                 setTimeout(() => setIsNewSession(false), 1000);
               }
@@ -61,12 +63,15 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         );
 
         // Check for existing session
+        console.log('AuthProvider: Checking for existing session...');
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
         if (sessionError) {
-          console.error('Session error:', sessionError);
+          console.error('AuthProvider: Session error:', sessionError);
           setError(sessionError.message);
         }
+        
+        console.log('AuthProvider: Current session:', session?.user?.email || 'no session');
         
         if (mounted) {
           setSession(session);
@@ -78,7 +83,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           subscription.unsubscribe();
         };
       } catch (err) {
-        console.error('Auth initialization error:', err);
+        console.error('AuthProvider: Auth initialization error:', err);
         if (mounted) {
           setError(err instanceof Error ? err.message : 'Authentication failed');
           setLoading(false);
@@ -92,6 +97,13 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       cleanup.then(cleanupFn => cleanupFn?.());
     };
   }, []);
+
+  console.log('AuthProvider: Rendering with state:', {
+    hasSession: !!session,
+    loading,
+    error: error || 'no error',
+    userEmail: session?.user?.email || 'no user'
+  });
 
   return (
     <AuthContext.Provider value={{ session, loading, error, isNewSession }}>
