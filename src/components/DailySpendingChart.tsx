@@ -1,8 +1,8 @@
 
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useCurrency } from "@/contexts/CurrencyContext";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, parseISO } from "date-fns";
+import { format, startOfMonth, endOfMonth, eachDayOfInterval } from "date-fns";
 
 interface Transaction {
   id: string;
@@ -65,11 +65,22 @@ export const DailySpendingChart = ({ transactions, currentMonth }: DailySpending
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       return (
-        <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
-          <p className="font-medium">Day {label}</p>
-          <p className="text-red-600">Expenses: {formatAmount(data.expenses, displayCurrency)}</p>
-          <p className="text-green-600">Income: {formatAmount(data.income, displayCurrency)}</p>
-          <p className="text-blue-600">Net: {formatAmount(data.net, displayCurrency)}</p>
+        <div className="bg-white p-4 border border-gray-200 rounded-lg shadow-lg">
+          <p className="font-semibold text-gray-800 mb-2">Day {label}</p>
+          <div className="space-y-1">
+            <p className="text-red-600 flex items-center gap-2">
+              <span className="w-3 h-3 bg-red-500 rounded-full"></span>
+              Expenses: <span className="font-medium">{formatAmount(data.expenses, displayCurrency)}</span>
+            </p>
+            <p className="text-green-600 flex items-center gap-2">
+              <span className="w-3 h-3 bg-green-500 rounded-full"></span>
+              Income: <span className="font-medium">{formatAmount(data.income, displayCurrency)}</span>
+            </p>
+            <p className="text-blue-600 flex items-center gap-2">
+              <span className="w-3 h-3 bg-blue-500 rounded-full"></span>
+              Net: <span className="font-medium">{formatAmount(data.net, displayCurrency)}</span>
+            </p>
+          </div>
         </div>
       );
     }
@@ -84,14 +95,49 @@ export const DailySpendingChart = ({ transactions, currentMonth }: DailySpending
       <CardContent>
         <div className="h-64">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={dailyData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+            <LineChart data={dailyData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-              <XAxis dataKey="day" className="text-xs" />
-              <YAxis className="text-xs" />
+              <XAxis 
+                dataKey="day" 
+                className="text-xs"
+                axisLine={false}
+                tickLine={false}
+              />
+              <YAxis 
+                className="text-xs"
+                axisLine={false}
+                tickLine={false}
+              />
               <Tooltip content={<CustomTooltip />} />
-              <Bar dataKey="expenses" fill="#EF4444" radius={[2, 2, 0, 0]} />
-              <Bar dataKey="income" fill="#10B981" radius={[2, 2, 0, 0]} />
-            </BarChart>
+              <Line 
+                type="monotone" 
+                dataKey="expenses" 
+                stroke="#EF4444" 
+                strokeWidth={3}
+                dot={{ fill: '#EF4444', strokeWidth: 2, r: 4 }}
+                activeDot={{ r: 6, stroke: '#EF4444', strokeWidth: 2 }}
+                animationDuration={1000}
+              />
+              <Line 
+                type="monotone" 
+                dataKey="income" 
+                stroke="#10B981" 
+                strokeWidth={3}
+                dot={{ fill: '#10B981', strokeWidth: 2, r: 4 }}
+                activeDot={{ r: 6, stroke: '#10B981', strokeWidth: 2 }}
+                animationDuration={1000}
+              />
+              <Line 
+                type="monotone" 
+                dataKey="net" 
+                stroke="#3B82F6" 
+                strokeWidth={2}
+                strokeDasharray="5 5"
+                dot={{ fill: '#3B82F6', strokeWidth: 2, r: 3 }}
+                activeDot={{ r: 5, stroke: '#3B82F6', strokeWidth: 2 }}
+                animationDuration={1000}
+              />
+            </LineChart>
           </ResponsiveContainer>
         </div>
       </CardContent>
