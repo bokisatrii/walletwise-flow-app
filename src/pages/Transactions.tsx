@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -136,7 +135,7 @@ const Transactions = () => {
       </div>
 
       {/* Daily Spending Chart */}
-      <DailySpendingChart transactions={currentMonthTransactions} />
+      <DailySpendingChart transactions={currentMonthTransactions} currentMonth={new Date()} />
 
       {/* Filters */}
       <div className="space-y-3">
