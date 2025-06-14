@@ -9,7 +9,7 @@ import { AddTransactionModal } from "@/components/AddTransactionModal";
 import { EditTransactionModal } from "@/components/EditTransactionModal";
 import { DailySpendingChart } from "@/components/DailySpendingChart";
 import { useTransactions, useDeleteTransaction, Transaction } from "@/hooks/useTransactions";
-import { useCurrency } from "@/contexts/CurrencyContext";
+import { useCurrency, Currency } from "@/contexts/CurrencyContext";
 import { format } from "date-fns";
 
 const Transactions = () => {
@@ -63,21 +63,24 @@ const Transactions = () => {
   };
 
   const getDisplayAmount = (transaction: Transaction) => {
-    const convertedAmount = convertAmount(Number(transaction.amount), transaction.currency || 'EUR', displayCurrency);
+    const transactionCurrency = (transaction.currency as Currency) || 'EUR';
+    const convertedAmount = convertAmount(Number(transaction.amount), transactionCurrency, displayCurrency);
     return formatAmount(convertedAmount, displayCurrency);
   };
 
   const totalIncome = filteredTransactions
     .filter(t => t.type === 'income')
     .reduce((sum, t) => {
-      const convertedAmount = convertAmount(Number(t.amount), t.currency || 'EUR', displayCurrency);
+      const transactionCurrency = (t.currency as Currency) || 'EUR';
+      const convertedAmount = convertAmount(Number(t.amount), transactionCurrency, displayCurrency);
       return sum + convertedAmount;
     }, 0);
 
   const totalExpenses = filteredTransactions
     .filter(t => t.type === 'expense')
     .reduce((sum, t) => {
-      const convertedAmount = convertAmount(Number(t.amount), t.currency || 'EUR', displayCurrency);
+      const transactionCurrency = (t.currency as Currency) || 'EUR';
+      const convertedAmount = convertAmount(Number(t.amount), transactionCurrency, displayCurrency);
       return sum + convertedAmount;
     }, 0);
 

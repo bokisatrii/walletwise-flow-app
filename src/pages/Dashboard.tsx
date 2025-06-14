@@ -9,7 +9,7 @@ import { TransactionChart } from "@/components/TransactionChart";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { useCurrency } from "@/contexts/CurrencyContext";
+import { useCurrency, Currency } from "@/contexts/CurrencyContext";
 
 const Dashboard = () => {
   const [showAddTransaction, setShowAddTransaction] = useState(false);
@@ -59,14 +59,16 @@ const Dashboard = () => {
   const totalIncome = transactions
     .filter(t => t.type === 'income')
     .reduce((sum, t) => {
-      const convertedAmount = convertAmount(Number(t.amount), t.currency || 'EUR', displayCurrency);
+      const transactionCurrency = (t.currency as Currency) || 'EUR';
+      const convertedAmount = convertAmount(Number(t.amount), transactionCurrency, displayCurrency);
       return sum + convertedAmount;
     }, 0);
 
   const totalExpenses = transactions
     .filter(t => t.type === 'expense')
     .reduce((sum, t) => {
-      const convertedAmount = convertAmount(Number(t.amount), t.currency || 'EUR', displayCurrency);
+      const transactionCurrency = (t.currency as Currency) || 'EUR';
+      const convertedAmount = convertAmount(Number(t.amount), transactionCurrency, displayCurrency);
       return sum + convertedAmount;
     }, 0);
 
@@ -197,7 +199,8 @@ const Dashboard = () => {
           ) : (
             <div className="space-y-3">
               {recentTransactions.map((transaction, index) => {
-                const convertedAmount = convertAmount(Number(transaction.amount), transaction.currency || 'EUR', displayCurrency);
+                const transactionCurrency = (transaction.currency as Currency) || 'EUR';
+                const convertedAmount = convertAmount(Number(transaction.amount), transactionCurrency, displayCurrency);
                 return (
                   <div 
                     key={transaction.id} 
