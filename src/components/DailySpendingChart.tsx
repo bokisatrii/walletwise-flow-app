@@ -1,4 +1,3 @@
-
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useCurrency } from "@/contexts/CurrencyContext";
@@ -108,7 +107,7 @@ export const DailySpendingChart = ({ transactions, currentMonth }: DailySpending
               />
               <Tooltip content={<CustomTooltip />} />
               <Line 
-                type="cardinal" 
+                type="basis" 
                 dataKey="expenses" 
                 stroke="#4169E1" 
                 strokeWidth={3}
@@ -118,7 +117,7 @@ export const DailySpendingChart = ({ transactions, currentMonth }: DailySpending
                 animationDuration={1000}
               />
               <Line 
-                type="cardinal" 
+                type="basis" 
                 dataKey="average" 
                 stroke="#9CA3AF" 
                 strokeWidth={2}
