@@ -9,6 +9,7 @@ import { TransactionChart } from "@/components/TransactionChart";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 const Dashboard = () => {
   const [showAddTransaction, setShowAddTransaction] = useState(false);
@@ -17,6 +18,7 @@ const Dashboard = () => {
   
   const currentMonth = format(new Date(), 'yyyy-MM');
   const { data: transactions = [], isLoading, error } = useTransactions(currentMonth);
+  const { convertAmount, formatAmount, displayCurrency } = useCurrency();
 
   useEffect(() => {
     const checkDemoUser = async () => {
@@ -53,14 +55,20 @@ const Dashboard = () => {
     }
   };
 
-  // Calculate totals for current month
+  // Calculate totals for current month with currency conversion
   const totalIncome = transactions
     .filter(t => t.type === 'income')
-    .reduce((sum, t) => sum + Number(t.amount), 0);
+    .reduce((sum, t) => {
+      const convertedAmount = convertAmount(Number(t.amount), t.currency, displayCurrency);
+      return sum + convertedAmount;
+    }, 0);
 
   const totalExpenses = transactions
     .filter(t => t.type === 'expense')
-    .reduce((sum, t) => sum + Number(t.amount), 0);
+    .reduce((sum, t) => {
+      const convertedAmount = convertAmount(Number(t.amount), t.currency, displayCurrency);
+      return sum + convertedAmount;
+    }, 0);
 
   const balance = totalIncome - totalExpenses;
 
@@ -126,7 +134,7 @@ const Dashboard = () => {
           <div className="flex justify-between items-center">
             <div>
               <p className="text-blue-100 mb-2">Current Balance</p>
-              <p className="text-3xl font-bold">${balance.toFixed(2)}</p>
+              <p className="text-3xl font-bold">{formatAmount(balance, displayCurrency)}</p>
               <p className="text-blue-100 text-sm mt-1">
                 {format(new Date(), 'MMMM yyyy')}
               </p>
@@ -144,7 +152,7 @@ const Dashboard = () => {
               <ArrowUpRight className="h-4 w-4" />
               <span className="text-sm font-medium">Income</span>
             </div>
-            <p className="text-2xl font-bold">${totalIncome.toFixed(2)}</p>
+            <p className="text-2xl font-bold">{formatAmount(totalIncome, displayCurrency)}</p>
             <p className="text-xs text-gray-500">This month</p>
           </CardContent>
         </Card>
@@ -155,7 +163,7 @@ const Dashboard = () => {
               <ArrowDownRight className="h-4 w-4" />
               <span className="text-sm font-medium">Expenses</span>
             </div>
-            <p className="text-2xl font-bold">${totalExpenses.toFixed(2)}</p>
+            <p className="text-2xl font-bold">{formatAmount(totalExpenses, displayCurrency)}</p>
             <p className="text-xs text-gray-500">This month</p>
           </CardContent>
         </Card>
@@ -188,36 +196,39 @@ const Dashboard = () => {
             </div>
           ) : (
             <div className="space-y-3">
-              {recentTransactions.map((transaction, index) => (
-                <div 
-                  key={transaction.id} 
-                  className="flex items-center justify-between animate-fade-in hover-scale transition-all duration-200"
-                  style={{ animationDelay: `${index * 100}ms` }}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-primary-50 flex items-center justify-center">
-                      <span className="text-xs font-medium text-primary">
-                        {transaction.category.charAt(0)}
-                      </span>
-                    </div>
-                    <div>
-                      <p className="font-medium text-sm">
-                        {transaction.description || transaction.category}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        {new Date(transaction.date).toLocaleDateString()}
-                      </p>
-                    </div>
-                  </div>
-                  <p
-                    className={`font-bold text-sm ${
-                      transaction.type === "income" ? "text-accent" : "text-red-500"
-                    }`}
+              {recentTransactions.map((transaction, index) => {
+                const convertedAmount = convertAmount(Number(transaction.amount), transaction.currency, displayCurrency);
+                return (
+                  <div 
+                    key={transaction.id} 
+                    className="flex items-center justify-between animate-fade-in hover-scale transition-all duration-200"
+                    style={{ animationDelay: `${index * 100}ms` }}
                   >
-                    {transaction.type === "income" ? "+" : "-"}${Math.abs(Number(transaction.amount)).toFixed(2)}
-                  </p>
-                </div>
-              ))}
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-primary-50 flex items-center justify-center">
+                        <span className="text-xs font-medium text-primary">
+                          {transaction.category.charAt(0)}
+                        </span>
+                      </div>
+                      <div>
+                        <p className="font-medium text-sm">
+                          {transaction.description || transaction.category}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {new Date(transaction.date).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                    <p
+                      className={`font-bold text-sm ${
+                        transaction.type === "income" ? "text-accent" : "text-red-500"
+                      }`}
+                    >
+                      {transaction.type === "income" ? "+" : "-"}{formatAmount(convertedAmount, displayCurrency)}
+                    </p>
+                  </div>
+                );
+              })}
             </div>
           )}
         </CardContent>

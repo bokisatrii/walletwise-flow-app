@@ -6,19 +6,27 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus } from "lucide-react";
-import { useTransactions } from "@/hooks/useTransactions";
+import { useCreateTransaction } from "@/hooks/useTransactions";
 import { toast } from "sonner";
 import { useCurrency, Currency } from "@/contexts/CurrencyContext";
 
-export const AddTransactionModal = () => {
-  const [open, setOpen] = useState(false);
+interface AddTransactionModalProps {
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+}
+
+export const AddTransactionModal = ({ open, onOpenChange }: AddTransactionModalProps = {}) => {
+  const [isOpen, setIsOpen] = useState(false);
   const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState("");
   const [type, setType] = useState<"income" | "expense">("expense");
   const [currency, setCurrency] = useState<Currency>("EUR");
-  const { addTransaction } = useTransactions();
+  const addTransaction = useCreateTransaction();
   const { displayCurrency } = useCurrency();
+
+  const modalOpen = open !== undefined ? open : isOpen;
+  const setModalOpen = onOpenChange || setIsOpen;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,7 +58,7 @@ export const AddTransactionModal = () => {
       setCategory("");
       setType("expense");
       setCurrency(displayCurrency);
-      setOpen(false);
+      setModalOpen(false);
     } catch (error) {
       toast.error("Failed to add transaction");
       console.error("Error adding transaction:", error);
@@ -70,12 +78,14 @@ export const AddTransactionModal = () => {
   ];
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button className="fixed bottom-24 right-6 h-14 w-14 rounded-full shadow-lg z-40">
-          <Plus size={24} />
-        </Button>
-      </DialogTrigger>
+    <Dialog open={modalOpen} onOpenChange={setModalOpen}>
+      {!open && (
+        <DialogTrigger asChild>
+          <Button className="fixed bottom-24 right-6 h-14 w-14 rounded-full shadow-lg z-40">
+            <Plus size={24} />
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Add Transaction</DialogTitle>
@@ -151,7 +161,7 @@ export const AddTransactionModal = () => {
           </div>
 
           <div className="flex gap-2 pt-4">
-            <Button type="button" variant="outline" onClick={() => setOpen(false)} className="flex-1">
+            <Button type="button" variant="outline" onClick={() => setModalOpen(false)} className="flex-1">
               Cancel
             </Button>
             <Button type="submit" className="flex-1">
