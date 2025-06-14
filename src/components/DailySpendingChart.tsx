@@ -108,20 +108,22 @@ export const DailySpendingChart = ({ transactions, currentMonth }: DailySpending
               />
               <Tooltip content={<CustomTooltip />} />
               <Line 
-                type="monotone" 
+                type="cardinal" 
                 dataKey="expenses" 
                 stroke="#4169E1" 
                 strokeWidth={3}
+                strokeLinecap="round"
                 dot={{ fill: '#4169E1', strokeWidth: 2, r: 2 }}
                 activeDot={{ r: 4, stroke: '#4169E1', strokeWidth: 2 }}
                 animationDuration={1000}
               />
               <Line 
-                type="monotone" 
+                type="cardinal" 
                 dataKey="average" 
                 stroke="#9CA3AF" 
                 strokeWidth={2}
                 strokeDasharray="5 5"
+                strokeLinecap="round"
                 dot={false}
                 activeDot={{ r: 3, stroke: '#9CA3AF', strokeWidth: 2 }}
                 animationDuration={1000}
