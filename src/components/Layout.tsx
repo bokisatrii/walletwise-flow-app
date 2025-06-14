@@ -1,6 +1,6 @@
 
 import { Outlet } from "react-router-dom";
-import BottomNavigation from "./BottomNavigation";
+import { BottomNavigation } from "./BottomNavigation";
 import { CurrencySelector } from "./CurrencySelector";
 
 const Layout = () => {

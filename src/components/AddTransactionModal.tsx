@@ -1,217 +1,142 @@
 
-import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import React, { useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
-import { useCreateTransaction } from "@/hooks/useTransactions";
-import { supabase } from "@/integrations/supabase/client";
-import { useEffect } from "react";
-import { toast } from "@/hooks/use-toast";
-import { Currency, useCurrency } from "@/contexts/CurrencyContext";
+import { Plus } from "lucide-react";
+import { useTransactions } from "@/hooks/useTransactions";
+import { toast } from "sonner";
+import { useCurrency, Currency } from "@/contexts/CurrencyContext";
 
-interface AddTransactionModalProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-}
-
-const categories = [
-  "Food & Dining",
-  "Transportation",
-  "Shopping",
-  "Entertainment",
-  "Bills & Utilities",
-  "Healthcare",
-  "Education",
-  "Travel",
-  "Salary",
-  "Freelance",
-  "Investment",
-  "Other",
-];
-
-const currencies: { value: Currency; label: string; symbol: string }[] = [
-  { value: 'EUR', label: 'Euro', symbol: '€' },
-  { value: 'USD', label: 'Dollar', symbol: '$' },
-  { value: 'RSD', label: 'Dinar', symbol: 'RSD' }
-];
-
-export const AddTransactionModal = ({ open, onOpenChange }: AddTransactionModalProps) => {
+export const AddTransactionModal = () => {
+  const [open, setOpen] = useState(false);
+  const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState("");
-  const [description, setDescription] = useState("");
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
-  const [type, setType] = useState<"expense" | "income">("expense");
-  const [selectedCurrency, setSelectedCurrency] = useState<Currency>("EUR");
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-
-  const createTransaction = useCreateTransaction();
-  const { displayCurrency, convertAmount, formatAmount } = useCurrency();
-
-  useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setIsAuthenticated(!!user);
-    };
-    
-    if (open) {
-      checkAuth();
-      setSelectedCurrency(displayCurrency);
-    }
-  }, [open, displayCurrency]);
+  const [type, setType] = useState<"income" | "expense">("expense");
+  const [currency, setCurrency] = useState<Currency>("EUR");
+  const { addTransaction } = useTransactions();
+  const { displayCurrency } = useCurrency();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!amount || !category) {
-      toast({
-        title: "Missing Information",
-        description: "Please fill in the amount and category fields.",
-        variant: "destructive",
-      });
+    if (!description || !amount || !category) {
+      toast.error("Please fill in all fields");
       return;
     }
 
-    if (!isAuthenticated) {
-      toast({
-        title: "Authentication Required",
-        description: "Please sign in to add transactions.",
-        variant: "destructive",
-      });
+    const numAmount = parseFloat(amount);
+    if (isNaN(numAmount) || numAmount <= 0) {
+      toast.error("Please enter a valid amount");
       return;
     }
 
-    const parsedAmount = parseFloat(amount);
-    if (isNaN(parsedAmount) || parsedAmount <= 0) {
-      toast({
-        title: "Invalid Amount",
-        description: "Please enter a valid amount greater than 0.",
-        variant: "destructive",
+    try {
+      await addTransaction.mutateAsync({
+        description,
+        amount: numAmount,
+        category,
+        type,
+        currency,
+        date: new Date().toISOString().split('T')[0]
       });
-      return;
+
+      toast.success("Transaction added successfully!");
+      setDescription("");
+      setAmount("");
+      setCategory("");
+      setType("expense");
+      setCurrency(displayCurrency);
+      setOpen(false);
+    } catch (error) {
+      toast.error("Failed to add transaction");
+      console.error("Error adding transaction:", error);
     }
-
-    console.log('Submitting transaction:', {
-      amount: parsedAmount,
-      category,
-      description: description || undefined,
-      date,
-      type,
-      currency: selectedCurrency,
-    });
-
-    createTransaction.mutate({
-      amount: parsedAmount,
-      category,
-      description: description || undefined,
-      date,
-      type,
-      currency: selectedCurrency,
-    }, {
-      onSuccess: () => {
-        // Reset form
-        setAmount("");
-        setCategory("");
-        setDescription("");
-        setDate(new Date().toISOString().split('T')[0]);
-        setType("expense");
-        setSelectedCurrency(displayCurrency);
-        onOpenChange(false);
-      }
-    });
   };
 
-  if (!isAuthenticated && open) {
-    return (
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Sign In Required</DialogTitle>
-          </DialogHeader>
-          
-          <div className="text-center py-6">
-            <p className="text-gray-600 mb-4">
-              You need to be signed in to add transactions.
-            </p>
-            <Button onClick={() => onOpenChange(false)}>
-              Close
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-    );
-  }
-
-  const convertedAmount = amount ? convertAmount(parseFloat(amount), selectedCurrency, displayCurrency) : 0;
+  const categories = [
+    "Food & Dining",
+    "Transportation",
+    "Shopping",
+    "Entertainment",
+    "Bills & Utilities",
+    "Healthcare",
+    "Education",
+    "Travel",
+    "Other"
+  ];
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button className="fixed bottom-24 right-6 h-14 w-14 rounded-full shadow-lg z-40">
+          <Plus size={24} />
+        </Button>
+      </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Add Transaction</DialogTitle>
         </DialogHeader>
-        
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-2">
-            <Button
-              type="button"
-              variant={type === "expense" ? "default" : "outline"}
-              onClick={() => setType("expense")}
-              className="w-full"
-            >
-              Expense
-            </Button>
-            <Button
-              type="button"
-              variant={type === "income" ? "default" : "outline"}
-              onClick={() => setType("income")}
-              className="w-full"
-            >
-              Income
-            </Button>
+          <div className="space-y-2">
+            <Label htmlFor="type">Type</Label>
+            <Select value={type} onValueChange={(value) => setType(value as "income" | "expense")}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="expense">Expense</SelectItem>
+                <SelectItem value="income">Income</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
-          <div className="grid grid-cols-2 gap-2">
+          <div className="space-y-2">
+            <Label htmlFor="description">Description</Label>
+            <Input
+              id="description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Enter description"
+              required
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="amount">Amount *</Label>
+              <Label htmlFor="amount">Amount</Label>
               <Input
                 id="amount"
                 type="number"
                 step="0.01"
-                placeholder="0.00"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
+                placeholder="0.00"
                 required
               />
             </div>
+
             <div className="space-y-2">
               <Label htmlFor="currency">Currency</Label>
-              <Select value={selectedCurrency} onValueChange={setSelectedCurrency}>
+              <Select value={currency} onValueChange={(value) => setCurrency(value as Currency)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {currencies.map((currency) => (
-                    <SelectItem key={currency.value} value={currency.value}>
-                      {currency.symbol}
-                    </SelectItem>
-                  ))}
+                  <SelectItem value="EUR">EUR (€)</SelectItem>
+                  <SelectItem value="USD">USD ($)</SelectItem>
+                  <SelectItem value="RSD">RSD</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
 
-          {amount && selectedCurrency !== displayCurrency && (
-            <div className="text-sm text-gray-600 bg-gray-50 p-2 rounded">
-              ≈ {formatAmount(convertedAmount, displayCurrency)}
-            </div>
-          )}
-
           <div className="space-y-2">
-            <Label htmlFor="category">Category *</Label>
-            <Select value={category} onValueChange={setCategory} required>
+            <Label htmlFor="category">Category</Label>
+            <Select value={category} onValueChange={setCategory}>
               <SelectTrigger>
                 <SelectValue placeholder="Select category" />
               </SelectTrigger>
@@ -225,42 +150,12 @@ export const AddTransactionModal = ({ open, onOpenChange }: AddTransactionModalP
             </Select>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="date">Date</Label>
-            <Input
-              id="date"
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
-            <Textarea
-              id="description"
-              placeholder="Optional description..."
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={3}
-            />
-          </div>
-
           <div className="flex gap-2 pt-4">
-            <Button 
-              type="button" 
-              variant="outline" 
-              onClick={() => onOpenChange(false)} 
-              className="flex-1"
-            >
+            <Button type="button" variant="outline" onClick={() => setOpen(false)} className="flex-1">
               Cancel
             </Button>
-            <Button 
-              type="submit" 
-              className="flex-1"
-              disabled={createTransaction.isPending}
-            >
-              {createTransaction.isPending ? "Adding..." : "Add Transaction"}
+            <Button type="submit" className="flex-1">
+              Add Transaction
             </Button>
           </div>
         </form>
