@@ -8,6 +8,7 @@ import { AddSubscriptionForm } from "@/components/AddSubscriptionForm";
 import { EditSubscriptionModal } from "@/components/EditSubscriptionModal";
 import { SubscriptionCalendar } from "@/components/SubscriptionCalendar";
 import { useSubscriptions, Subscription } from "@/hooks/useSubscriptions";
+import { useCurrency } from "@/contexts/CurrencyContext";
 import { format, parseISO } from "date-fns";
 
 const Subscriptions = () => {
@@ -20,8 +21,16 @@ const Subscriptions = () => {
     deleteSubscription, 
     isDeletingSubscription 
   } = useSubscriptions();
+  
+  const { displayCurrency, convertAmount, formatAmount } = useCurrency();
 
-  const totalMonthly = subscriptions.reduce((sum, sub) => sum + sub.amount, 0);
+  // Convert subscription amounts to display currency (assuming they're stored in EUR)
+  const convertedSubscriptions = subscriptions.map(sub => ({
+    ...sub,
+    convertedAmount: convertAmount(sub.amount, 'EUR', displayCurrency)
+  }));
+
+  const totalMonthly = convertedSubscriptions.reduce((sum, sub) => sum + sub.convertedAmount, 0);
   const totalYearly = totalMonthly * 12;
 
   const formatDate = (dateString: string) => {
@@ -65,7 +74,7 @@ const Subscriptions = () => {
               </div>
               <div>
                 <p className="text-sm text-gray-600">Monthly Total</p>
-                <p className="text-xl font-bold text-gray-900">${totalMonthly.toFixed(2)}</p>
+                <p className="text-xl font-bold text-gray-900">{formatAmount(totalMonthly, displayCurrency)}</p>
               </div>
             </div>
           </CardContent>
@@ -79,7 +88,7 @@ const Subscriptions = () => {
               </div>
               <div>
                 <p className="text-sm text-gray-600">Yearly Total</p>
-                <p className="text-xl font-bold text-gray-900">${totalYearly.toFixed(2)}</p>
+                <p className="text-xl font-bold text-gray-900">{formatAmount(totalYearly, displayCurrency)}</p>
               </div>
             </div>
           </CardContent>
@@ -114,10 +123,10 @@ const Subscriptions = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {subscriptions.map((subscription) => (
+                  {convertedSubscriptions.map((subscription) => (
                     <TableRow key={subscription.id}>
                       <TableCell className="font-medium">{subscription.name}</TableCell>
-                      <TableCell>${subscription.amount.toFixed(2)}</TableCell>
+                      <TableCell>{formatAmount(subscription.convertedAmount, displayCurrency)}</TableCell>
                       <TableCell>
                         <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
                           {subscription.renewal_interval || 'Monthly'}

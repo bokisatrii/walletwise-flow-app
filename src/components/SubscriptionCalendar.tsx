@@ -4,6 +4,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Subscription } from "@/hooks/useSubscriptions";
+import { useCurrency } from "@/contexts/CurrencyContext";
 import { format, isSameDay, parseISO } from "date-fns";
 import { CreditCard } from "lucide-react";
 
@@ -13,6 +14,7 @@ interface SubscriptionCalendarProps {
 
 export const SubscriptionCalendar = ({ subscriptions }: SubscriptionCalendarProps) => {
   const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(new Date());
+  const { displayCurrency, convertAmount, formatAmount } = useCurrency();
 
   // Get subscriptions for a specific date
   const getSubscriptionsForDate = (date: Date) => {
@@ -55,11 +57,14 @@ export const SubscriptionCalendar = ({ subscriptions }: SubscriptionCalendarProp
                 <p className="font-medium text-xs">
                   {format(date, 'MMM d, yyyy')}
                 </p>
-                {daySubscriptions.map((sub) => (
-                  <div key={sub.id} className="text-xs">
-                    💳 {sub.name} – ${sub.amount.toFixed(2)}
-                  </div>
-                ))}
+                {daySubscriptions.map((sub) => {
+                  const convertedAmount = convertAmount(sub.amount, 'EUR', displayCurrency);
+                  return (
+                    <div key={sub.id} className="text-xs">
+                      💳 {sub.name} – {formatAmount(convertedAmount, displayCurrency)}
+                    </div>
+                  );
+                })}
               </div>
             </TooltipContent>
           )}
@@ -135,20 +140,25 @@ export const SubscriptionCalendar = ({ subscriptions }: SubscriptionCalendarProp
               Payments on {format(selectedDate, 'MMMM d, yyyy')}:
             </h4>
             <div className="space-y-3">
-              {selectedDateSubscriptions.map((subscription) => (
-                <div 
-                  key={subscription.id}
-                  className="flex justify-between items-center p-3 bg-white rounded-lg shadow-sm border"
-                >
-                  <div>
-                    <p className="font-medium text-sm">{subscription.name}</p>
-                    <p className="text-xs text-gray-600">
-                      {subscription.renewal_interval || 'Monthly'} • {subscription.description || 'No description'}
-                    </p>
+              {selectedDateSubscriptions.map((subscription) => {
+                const convertedAmount = convertAmount(subscription.amount, 'EUR', displayCurrency);
+                return (
+                  <div 
+                    key={subscription.id}
+                    className="flex justify-between items-center p-3 bg-white rounded-lg shadow-sm border"
+                  >
+                    <div>
+                      <p className="font-medium text-sm">{subscription.name}</p>
+                      <p className="text-xs text-gray-600">
+                        {subscription.renewal_interval || 'Monthly'} • {subscription.description || 'No description'}
+                      </p>
+                    </div>
+                    <span className="font-bold text-sm text-primary">
+                      {formatAmount(convertedAmount, displayCurrency)}
+                    </span>
                   </div>
-                  <span className="font-bold text-sm text-primary">${subscription.amount.toFixed(2)}</span>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}

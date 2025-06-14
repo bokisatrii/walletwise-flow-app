@@ -1,6 +1,7 @@
 
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useCurrency } from "@/contexts/CurrencyContext";
 import { Suspense } from "react";
 
 interface Transaction {
@@ -8,6 +9,7 @@ interface Transaction {
   amount: number;
   category: string;
   type: 'income' | 'expense';
+  currency?: string;
 }
 
 interface TransactionChartProps {
@@ -27,17 +29,23 @@ const ChartLoadingSkeleton = () => (
 );
 
 export const TransactionChart = ({ transactions, title = "Spending Breakdown" }: TransactionChartProps) => {
-  // Group expenses by category
+  const { displayCurrency, convertAmount, formatAmount } = useCurrency();
+
+  // Group expenses by category and convert to display currency
   const expenseData = transactions
     .filter(t => t.type === 'expense')
     .reduce((acc, transaction) => {
       const category = transaction.category;
-      const amount = Number(transaction.amount);
+      const originalAmount = Number(transaction.amount);
+      const transactionCurrency = (transaction.currency as any) || 'EUR';
+      
+      // Convert amount to display currency
+      const convertedAmount = convertAmount(originalAmount, transactionCurrency, displayCurrency);
       
       if (!acc[category]) {
         acc[category] = 0;
       }
-      acc[category] += amount;
+      acc[category] += convertedAmount;
       
       return acc;
     }, {} as Record<string, number>);
@@ -82,7 +90,7 @@ export const TransactionChart = ({ transactions, title = "Spending Breakdown" }:
       return (
         <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg animate-scale-in">
           <p className="font-medium">{data.name}</p>
-          <p className="text-primary">${data.value.toFixed(2)}</p>
+          <p className="text-primary">{formatAmount(data.value, displayCurrency)}</p>
           <p className="text-gray-500 text-sm">{data.percentage.toFixed(1)}%</p>
         </div>
       );
@@ -138,7 +146,7 @@ export const TransactionChart = ({ transactions, title = "Spending Breakdown" }:
                 style={{ backgroundColor: COLORS[index % COLORS.length] }}
               />
               <span className="text-sm text-gray-600 truncate">
-                {item.name}: ${item.value.toFixed(2)}
+                {item.name}: {formatAmount(item.value, displayCurrency)}
               </span>
             </div>
           ))}
