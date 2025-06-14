@@ -12,22 +12,36 @@ import { toast } from "@/hooks/use-toast";
 import { useCurrency, Currency } from "@/contexts/CurrencyContext";
 
 const Dashboard = () => {
+  console.log('Dashboard component is rendering...');
+  
   const [showAddTransaction, setShowAddTransaction] = useState(false);
   const [isDemo, setIsDemo] = useState(false);
   const [userEmail, setUserEmail] = useState<string>("");
   
   const currentMonth = format(new Date(), 'yyyy-MM');
+  console.log('Current month:', currentMonth);
+  
   const { data: transactions = [], isLoading, error } = useTransactions(currentMonth);
   const { convertAmount, formatAmount, displayCurrency } = useCurrency();
 
+  console.log('Dashboard state:', {
+    transactionsLength: transactions?.length || 0,
+    isLoading,
+    error: error?.message || 'no error',
+    displayCurrency
+  });
+
   useEffect(() => {
+    console.log('Checking demo user...');
     const checkDemoUser = async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
+        console.log('User data:', user);
         if (user?.email) {
           setUserEmail(user.email);
           if (user.email === "demo@walletwise.com") {
             setIsDemo(true);
+            console.log('Demo user detected');
           }
         }
       } catch (error) {
@@ -56,6 +70,7 @@ const Dashboard = () => {
   };
 
   // Calculate totals for current month with currency conversion
+  console.log('Calculating totals...');
   const totalIncome = transactions
     .filter(t => t.type === 'income')
     .reduce((sum, t) => {
@@ -74,18 +89,32 @@ const Dashboard = () => {
 
   const balance = totalIncome - totalExpenses;
 
+  console.log('Calculated values:', {
+    totalIncome,
+    totalExpenses,
+    balance
+  });
+
   // Recent transactions (last 5)
   const recentTransactions = transactions.slice(0, 5);
 
-  console.log('Dashboard render:', {
-    transactionsCount: transactions.length,
-    totalIncome,
-    totalExpenses,
-    balance,
-    isLoading
-  });
+  if (error) {
+    console.error('Dashboard error:', error);
+    return (
+      <div className="p-4 space-y-6 animate-fade-in">
+        <div className="pt-4">
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Dashboard Error</h1>
+          <p className="text-red-600">Error: {error.message}</p>
+          <Button onClick={() => window.location.reload()} className="mt-4">
+            Reload Page
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   if (isLoading) {
+    console.log('Dashboard is loading...');
     return (
       <div className="p-4 space-y-6 animate-fade-in">
         <div className="pt-4">
@@ -100,6 +129,8 @@ const Dashboard = () => {
       </div>
     );
   }
+
+  console.log('Rendering Dashboard content...');
 
   return (
     <div className="p-4 space-y-6 animate-fade-in">
