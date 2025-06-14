@@ -63,21 +63,21 @@ const Transactions = () => {
   };
 
   const getDisplayAmount = (transaction: Transaction) => {
-    const convertedAmount = convertAmount(Number(transaction.amount), transaction.currency, displayCurrency);
+    const convertedAmount = convertAmount(Number(transaction.amount), transaction.currency || 'EUR', displayCurrency);
     return formatAmount(convertedAmount, displayCurrency);
   };
 
   const totalIncome = filteredTransactions
     .filter(t => t.type === 'income')
     .reduce((sum, t) => {
-      const convertedAmount = convertAmount(Number(t.amount), t.currency, displayCurrency);
+      const convertedAmount = convertAmount(Number(t.amount), t.currency || 'EUR', displayCurrency);
       return sum + convertedAmount;
     }, 0);
 
   const totalExpenses = filteredTransactions
     .filter(t => t.type === 'expense')
     .reduce((sum, t) => {
-      const convertedAmount = convertAmount(Number(t.amount), t.currency, displayCurrency);
+      const convertedAmount = convertAmount(Number(t.amount), t.currency || 'EUR', displayCurrency);
       return sum + convertedAmount;
     }, 0);
 
@@ -256,7 +256,7 @@ const Transactions = () => {
                         {transaction.category}
                       </span>
                       <span className="text-sm text-gray-500">{formatDate(transaction.date)}</span>
-                      {transaction.currency !== displayCurrency && (
+                      {transaction.currency && transaction.currency !== displayCurrency && (
                         <span className="text-xs text-gray-400">({transaction.currency})</span>
                       )}
                     </div>
@@ -303,10 +303,12 @@ const Transactions = () => {
         <Plus className="h-6 w-6" />
       </Button>
 
-      <AddTransactionModal 
-        open={showAddTransaction}
-        onOpenChange={setShowAddTransaction}
-      />
+      {showAddTransaction && (
+        <AddTransactionModal 
+          open={showAddTransaction}
+          onOpenChange={setShowAddTransaction}
+        />
+      )}
 
       <EditTransactionModal 
         open={showEditTransaction}

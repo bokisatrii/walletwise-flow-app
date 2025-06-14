@@ -22,7 +22,7 @@ export const AddTransactionModal = ({ open, onOpenChange }: AddTransactionModalP
   const [category, setCategory] = useState("");
   const [type, setType] = useState<"income" | "expense">("expense");
   const [currency, setCurrency] = useState<Currency>("EUR");
-  const addTransaction = useCreateTransaction();
+  const createTransaction = useCreateTransaction();
   const { displayCurrency } = useCurrency();
 
   const modalOpen = open !== undefined ? open : isOpen;
@@ -43,7 +43,7 @@ export const AddTransactionModal = ({ open, onOpenChange }: AddTransactionModalP
     }
 
     try {
-      await addTransaction.mutateAsync({
+      await createTransaction.mutateAsync({
         description,
         amount: numAmount,
         category,

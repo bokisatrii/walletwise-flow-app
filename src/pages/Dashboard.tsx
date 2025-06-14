@@ -59,14 +59,14 @@ const Dashboard = () => {
   const totalIncome = transactions
     .filter(t => t.type === 'income')
     .reduce((sum, t) => {
-      const convertedAmount = convertAmount(Number(t.amount), t.currency, displayCurrency);
+      const convertedAmount = convertAmount(Number(t.amount), t.currency || 'EUR', displayCurrency);
       return sum + convertedAmount;
     }, 0);
 
   const totalExpenses = transactions
     .filter(t => t.type === 'expense')
     .reduce((sum, t) => {
-      const convertedAmount = convertAmount(Number(t.amount), t.currency, displayCurrency);
+      const convertedAmount = convertAmount(Number(t.amount), t.currency || 'EUR', displayCurrency);
       return sum + convertedAmount;
     }, 0);
 
@@ -197,7 +197,7 @@ const Dashboard = () => {
           ) : (
             <div className="space-y-3">
               {recentTransactions.map((transaction, index) => {
-                const convertedAmount = convertAmount(Number(transaction.amount), transaction.currency, displayCurrency);
+                const convertedAmount = convertAmount(Number(transaction.amount), transaction.currency || 'EUR', displayCurrency);
                 return (
                   <div 
                     key={transaction.id} 
@@ -242,10 +242,12 @@ const Dashboard = () => {
         <Plus className="h-6 w-6" />
       </Button>
 
-      <AddTransactionModal 
-        open={showAddTransaction}
-        onOpenChange={setShowAddTransaction}
-      />
+      {showAddTransaction && (
+        <AddTransactionModal 
+          open={showAddTransaction}
+          onOpenChange={setShowAddTransaction}
+        />
+      )}
     </div>
   );
 };
