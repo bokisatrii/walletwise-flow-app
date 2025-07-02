@@ -1,12 +1,11 @@
 import React from 'react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
+import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp } from "lucide-react";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useChartData } from "@/hooks/useChartData";
 import { ChartLegend } from "@/components/ChartLegend";
-import { ChartTooltip } from "@/components/ChartTooltip";
 import { getExplosionClass, CHART_COLORS, darkenColor } from "@/lib/chartUtils";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -160,7 +159,6 @@ export const SimplePieChart = ({ transactions, title = "Where did my money go?" 
                   );
                 })}
               </Pie>
-              <Tooltip content={<ChartTooltip />} />
             </PieChart>
           </ResponsiveContainer>
         </div>
