@@ -58,7 +58,7 @@ export const SubscriptionCalendar = ({ subscriptions }: SubscriptionCalendarProp
                   {format(date, 'MMM d, yyyy')}
                 </p>
                 {daySubscriptions.map((sub) => {
-                  const convertedAmount = convertAmount(sub.amount, 'EUR', displayCurrency);
+                  const convertedAmount = convertAmount(sub.amount, (sub.currency as any) || 'EUR', displayCurrency);
                   return (
                     <div key={sub.id} className="text-xs">
                       💳 {sub.name} – {formatAmount(convertedAmount, displayCurrency)}
@@ -141,7 +141,7 @@ export const SubscriptionCalendar = ({ subscriptions }: SubscriptionCalendarProp
             </h4>
             <div className="space-y-3">
               {selectedDateSubscriptions.map((subscription) => {
-                const convertedAmount = convertAmount(subscription.amount, 'EUR', displayCurrency);
+                const convertedAmount = convertAmount(subscription.amount, (subscription.currency as any) || 'EUR', displayCurrency);
                 return (
                   <div 
                     key={subscription.id}

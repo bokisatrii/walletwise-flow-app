@@ -24,10 +24,10 @@ const Subscriptions = () => {
   
   const { displayCurrency, convertAmount, formatAmount } = useCurrency();
 
-  // Convert subscription amounts to display currency (assuming they're stored in EUR)
+  // Convert subscription amounts to display currency using their actual stored currency
   const convertedSubscriptions = subscriptions.map(sub => ({
     ...sub,
-    convertedAmount: convertAmount(sub.amount, 'EUR', displayCurrency)
+    convertedAmount: convertAmount(sub.amount, (sub.currency as any) || 'EUR', displayCurrency)
   }));
 
   const totalMonthly = convertedSubscriptions.reduce((sum, sub) => sum + sub.convertedAmount, 0);
