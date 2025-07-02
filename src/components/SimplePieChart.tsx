@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { TrendingUp } from "lucide-react";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useChartData } from "@/hooks/useChartData";
-import { ChartCenterInfo } from "@/components/ChartCenterInfo";
+import { CategoryLabels } from "@/components/CategoryLabels";
 import { ChartLegend } from "@/components/ChartLegend";
 import { ChartTooltip } from "@/components/ChartTooltip";
 import { getExplosionClass, CHART_COLORS } from "@/lib/chartUtils";
@@ -116,7 +116,12 @@ export const SimplePieChart = ({ transactions, title = "Where did my money go?" 
             </PieChart>
           </ResponsiveContainer>
           
-          <ChartCenterInfo insights={insights} />
+          <CategoryLabels 
+            data={chartDataWithPercentages} 
+            centerX={200} 
+            centerY={160} 
+            radius={110} 
+          />
         </div>
         
         <ChartLegend 
