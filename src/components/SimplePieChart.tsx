@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useMemo, useCallback } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { TrendingUp } from "lucide-react";
+import { TrendingUp, PieChart as PieChartIcon } from "lucide-react";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useChartData } from "@/hooks/useChartData";
 import { ChartLegend } from "@/components/ChartLegend";
@@ -21,26 +21,54 @@ interface Transaction {
 interface SimplePieChartProps {
   transactions: Transaction[];
   title?: string;
+  showInsights?: boolean;
+  animationDuration?: number;
+  className?: string;
 }
 
-export const SimplePieChart = ({ transactions, title = "Where did my money go?" }: SimplePieChartProps) => {
+// Konstante izdvojene za lakše održavanje
+const ANIMATION_CONFIG = {
+  duration: 1000,
+  begin: 0,
+} as const;
+
+const EMPTY_STATE_CONFIG = {
+  icon: "📊",
+  emoji: "💸",
+  title: "No expense data to display",
+  subtitle: "Add some transactions to see your spending breakdown"
+} as const;
+
+export const SimplePieChart = ({ 
+  transactions, 
+  title = "Where did my money go?", 
+  showInsights = true,
+  animationDuration = ANIMATION_CONFIG.duration,
+  className = ""
+}: SimplePieChartProps) => {
   const { formatAmount, displayCurrency } = useCurrency();
   const { chartDataWithPercentages, insights } = useChartData(transactions);
   const isMobile = useIsMobile();
 
-  // Responsive dimensions
-  const dimensions = {
+  // Memoized responsive dimensions
+  const dimensions = useMemo(() => ({
     innerRadius: isMobile ? 45 : 65,
     outerRadius: isMobile ? 75 : 110,
     labelDistance: isMobile ? 18 : 40,
     fontSize: isMobile ? "13" : "11",
     containerHeight: isMobile ? "h-80" : "h-80",
-    margin: isMobile ? { top: 35, right: 35, bottom: 35, left: 35 } : { top: 40, right: 40, bottom: 40, left: 40 }
-  };
+    margin: isMobile 
+      ? { top: 35, right: 35, bottom: 35, left: 35 } 
+      : { top: 40, right: 40, bottom: 40, left: 40 }
+  }), [isMobile]);
 
-  // Custom label renderer for outside labels
-  const renderOutsideLabel = (props: any) => {
-    const { cx, cy, midAngle, innerRadius, outerRadius, value, index, name } = props;
+  // Memoized label renderer
+  const renderOutsideLabel = useCallback((props: any) => {
+    const { cx, cy, midAngle, outerRadius, value, index, name } = props;
+    
+    // Early return for very small percentages to avoid clutter
+    if (value < 2) return null;
+    
     const RADIAN = Math.PI / 180;
     const radius = outerRadius + dimensions.labelDistance;
     const x = cx + radius * Math.cos(-midAngle * RADIAN);
@@ -51,12 +79,7 @@ export const SimplePieChart = ({ transactions, title = "Where did my money go?" 
     const labelColor = darkenColor(originalColor, 30);
     
     // Determine text anchor based on position
-    let textAnchor = 'middle';
-    if (x > cx) {
-      textAnchor = 'start';
-    } else if (x < cx) {
-      textAnchor = 'end';
-    }
+    const textAnchor = x > cx ? 'start' : x < cx ? 'end' : 'middle';
 
     return (
       <text 
@@ -72,48 +95,87 @@ export const SimplePieChart = ({ transactions, title = "Where did my money go?" 
         {name} ({value.toFixed(1)}%)
       </text>
     );
-  };
+  }, [dimensions.labelDistance, dimensions.fontSize]);
 
-  if (chartDataWithPercentages.length === 0) {
-    return (
-      <Card className="animate-fade-in">
-        <CardHeader>
-          <CardTitle className="text-lg flex items-center gap-2">
-            <span>💸</span>
-            {title}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
-              <span className="text-2xl">📊</span>
-            </div>
-            <p className="text-muted-foreground">No expense data to display</p>
-            <p className="text-sm text-muted-foreground mt-1">Add some transactions to see your spending breakdown</p>
-          </div>
-        </CardContent>
-      </Card>
+  // Memoized cell renderer for better performance
+  const renderCell = useCallback((entry: any, index: number) => {
+    // Calculate explosion direction
+    const startAngle = chartDataWithPercentages.slice(0, index).reduce((sum, item) => 
+      sum + (parseFloat(item.percentage) * 3.6), 0
     );
+    const endAngle = startAngle + (parseFloat(entry.percentage) * 3.6);
+    const midAngle = (startAngle + endAngle) / 2;
+    const explosionClass = getExplosionClass(midAngle);
+    
+    return (
+      <Cell 
+        key={`cell-${index}`} 
+        fill={CHART_COLORS[index % CHART_COLORS.length]}
+        className={`segment-hover ${explosionClass} transition-all duration-300 cursor-pointer`}
+        style={{
+          filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.1))",
+          transformOrigin: "center"
+        }}
+      />
+    );
+  }, [chartDataWithPercentages]);
+
+  // Memoized empty state
+  const EmptyState = useMemo(() => (
+    <Card className={`animate-fade-in ${className}`}>
+      <CardHeader>
+        <CardTitle className="text-lg flex items-center gap-2">
+          <span>{EMPTY_STATE_CONFIG.emoji}</span>
+          {title}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
+            <PieChartIcon className="h-8 w-8 text-muted-foreground" />
+          </div>
+          <p className="text-muted-foreground font-medium">{EMPTY_STATE_CONFIG.title}</p>
+          <p className="text-sm text-muted-foreground mt-1">{EMPTY_STATE_CONFIG.subtitle}</p>
+        </div>
+      </CardContent>
+    </Card>
+  ), [title, className]);
+
+  // Early return for empty data
+  if (chartDataWithPercentages.length === 0) {
+    return EmptyState;
   }
 
+  // Memoized insights badges
+  const InsightsBadges = useMemo(() => {
+    if (!showInsights) return null;
+
+    return (
+      <div className="flex flex-wrap gap-2 mt-2">
+        <Badge variant="secondary" className="text-xs">
+          <TrendingUp className="h-3 w-3 mr-1" />
+          Top: {insights.topCategory} ({insights.topPercentage.toFixed(0)}%)
+        </Badge>
+        <Badge variant="outline" className="text-xs">
+          Total: {formatAmount(insights.totalSpent, displayCurrency)}
+        </Badge>
+        {insights.categoriesCount > 1 && (
+          <Badge variant="outline" className="text-xs">
+            {insights.categoriesCount} categories
+          </Badge>
+        )}
+      </div>
+    );
+  }, [showInsights, insights, formatAmount, displayCurrency]);
+
   return (
-    <Card className="animate-fade-in">
+    <Card className={`animate-fade-in ${className}`}>
       <CardHeader>
         <CardTitle className="text-lg flex items-center gap-2">
           <span>💸</span>
           {title}
         </CardTitle>
-        
-        {/* Quick Insights */}
-        <div className="flex flex-wrap gap-2 mt-2">
-          <Badge variant="secondary" className="text-xs">
-            <TrendingUp className="h-3 w-3 mr-1" />
-            Top: {insights.topCategory} ({insights.topPercentage.toFixed(0)}%)
-          </Badge>
-          <Badge variant="outline" className="text-xs">
-            Total: {formatAmount(insights.totalSpent, displayCurrency)}
-          </Badge>
-        </div>
+        {InsightsBadges}
       </CardHeader>
       
       <CardContent>
@@ -128,37 +190,15 @@ export const SimplePieChart = ({ transactions, title = "Where did my money go?" 
                 outerRadius={dimensions.outerRadius}
                 fill="#8884d8"
                 dataKey="value"
-                paddingAngle={0}
-                animationBegin={0}
-                animationDuration={1000}
+                paddingAngle={chartDataWithPercentages.length > 6 ? 1 : 0}
+                animationBegin={ANIMATION_CONFIG.begin}
+                animationDuration={animationDuration}
                 labelLine={false}
                 label={renderOutsideLabel}
                 stroke="hsl(var(--background))"
                 strokeWidth={4}
               >
-                {chartDataWithPercentages.map((entry, index) => {
-                  // Calculate the midpoint angle for this segment to determine explosion direction
-                  const startAngle = chartDataWithPercentages.slice(0, index).reduce((sum, item) => 
-                    sum + (parseFloat(item.percentage) * 3.6), 0
-                  );
-                  const endAngle = startAngle + (parseFloat(entry.percentage) * 3.6);
-                  const midAngle = (startAngle + endAngle) / 2;
-                  
-                  // Convert angle to determine explosion direction
-                  const explosionClass = getExplosionClass(midAngle);
-                  
-                  return (
-                    <Cell 
-                      key={`cell-${index}`} 
-                      fill={CHART_COLORS[index % CHART_COLORS.length]}
-                      className={`segment-hover ${explosionClass} transition-all duration-300 cursor-pointer`}
-                      style={{
-                        filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.1))",
-                        transformOrigin: "center"
-                      }}
-                    />
-                  );
-                })}
+                {chartDataWithPercentages.map(renderCell)}
               </Pie>
               <Tooltip content={<ChartTooltip />} />
             </PieChart>
