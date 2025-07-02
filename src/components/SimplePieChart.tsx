@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, LabelList } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useCurrency } from "@/contexts/CurrencyContext";
@@ -94,20 +94,55 @@ export const SimplePieChart = ({ transactions, title = "Where did my money go?" 
     );
   }
 
+  // Add percentage labels to chart data
+  const chartDataWithPercentages = useMemo(() => {
+    return chartData.map(item => ({
+      ...item,
+      percentage: ((item.value / insights.totalSpent) * 100).toFixed(1)
+    }));
+  }, [chartData, insights.totalSpent]);
+
   const renderCustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       return (
-        <div className="bg-background p-3 border border-border rounded-lg shadow-lg animate-scale-in">
-          <p className="font-medium">{data.name}</p>
-          <p className="text-primary">{formatAmount(data.value, displayCurrency)}</p>
+        <div className="bg-background p-4 border border-border rounded-lg shadow-xl animate-scale-in backdrop-blur-sm">
+          <p className="font-semibold text-base mb-1">{data.name}</p>
+          <p className="text-primary font-bold text-lg">{formatAmount(data.value, displayCurrency)}</p>
           <p className="text-muted-foreground text-sm">
-            {((data.value / insights.totalSpent) * 100).toFixed(1)}% of total
+            {data.percentage}% of total spending
           </p>
+          <div className="mt-2 pt-2 border-t border-border">
+            <p className="text-xs text-muted-foreground">
+              Click to view transactions in this category
+            </p>
+          </div>
         </div>
       );
     }
     return null;
+  };
+
+  const renderCustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percentage, name }: any) => {
+    if (parseFloat(percentage) < 5) return null; // Hide labels for small segments
+    
+    const RADIAN = Math.PI / 180;
+    const radius = innerRadius + (outerRadius - innerRadius) * 1.4;
+    const x = cx + radius * Math.cos(-midAngle * RADIAN);
+    const y = cy + radius * Math.sin(-midAngle * RADIAN);
+
+    return (
+      <text 
+        x={x} 
+        y={y} 
+        fill="hsl(var(--foreground))" 
+        textAnchor={x > cx ? 'start' : 'end'} 
+        dominantBaseline="central"
+        className="text-sm font-semibold"
+      >
+        {`${percentage}%`}
+      </text>
+    );
   };
 
   return (
@@ -135,22 +170,29 @@ export const SimplePieChart = ({ transactions, title = "Where did my money go?" 
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
-                data={chartData}
+                data={chartDataWithPercentages}
                 cx="50%"
                 cy="50%"
-                innerRadius={60}
-                outerRadius={100}
+                innerRadius={65}
+                outerRadius={110}
                 fill="#8884d8"
                 dataKey="value"
-                paddingAngle={5}
+                paddingAngle={8}
                 animationBegin={0}
-                animationDuration={800}
+                animationDuration={1000}
+                label={renderCustomLabel}
+                labelLine={false}
+                stroke="hsl(var(--background))"
+                strokeWidth={3}
               >
-                {chartData.map((entry, index) => (
+                {chartDataWithPercentages.map((entry, index) => (
                   <Cell 
                     key={`cell-${index}`} 
                     fill={COLORS[index % COLORS.length]}
-                    className="hover:opacity-80 transition-opacity duration-200 cursor-pointer"
+                    className="hover:brightness-110 hover:drop-shadow-lg transition-all duration-300 cursor-pointer hover:scale-105"
+                    style={{
+                      filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.1))"
+                    }}
                   />
                 ))}
               </Pie>
