@@ -32,10 +32,10 @@ export const SimplePieChart = ({ transactions, title = "Where did my money go?" 
   const dimensions = {
     innerRadius: isMobile ? 45 : 65,
     outerRadius: isMobile ? 75 : 110,
-    labelDistance: isMobile ? 25 : 40,
-    fontSize: isMobile ? "12" : "11",
-    containerHeight: isMobile ? "h-64" : "h-80",
-    margin: isMobile ? { top: 25, right: 25, bottom: 25, left: 25 } : { top: 40, right: 40, bottom: 40, left: 40 }
+    labelDistance: isMobile ? 18 : 40,
+    fontSize: isMobile ? "13" : "11",
+    containerHeight: isMobile ? "h-80" : "h-80",
+    margin: isMobile ? { top: 35, right: 35, bottom: 35, left: 35 } : { top: 40, right: 40, bottom: 40, left: 40 }
   };
 
   // Custom label renderer for outside labels
