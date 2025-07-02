@@ -8,6 +8,7 @@ import { useChartData } from "@/hooks/useChartData";
 import { ChartLegend } from "@/components/ChartLegend";
 import { ChartTooltip } from "@/components/ChartTooltip";
 import { getExplosionClass, CHART_COLORS, darkenColor } from "@/lib/chartUtils";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface Transaction {
   id: string;
@@ -25,12 +26,23 @@ interface SimplePieChartProps {
 export const SimplePieChart = ({ transactions, title = "Where did my money go?" }: SimplePieChartProps) => {
   const { formatAmount, displayCurrency } = useCurrency();
   const { chartDataWithPercentages, insights } = useChartData(transactions);
+  const isMobile = useIsMobile();
+
+  // Responsive dimensions
+  const dimensions = {
+    innerRadius: isMobile ? 45 : 65,
+    outerRadius: isMobile ? 75 : 110,
+    labelDistance: isMobile ? 25 : 40,
+    fontSize: isMobile ? "12" : "11",
+    containerHeight: isMobile ? "h-64" : "h-80",
+    margin: isMobile ? { top: 25, right: 25, bottom: 25, left: 25 } : { top: 40, right: 40, bottom: 40, left: 40 }
+  };
 
   // Custom label renderer for outside labels
   const renderOutsideLabel = (props: any) => {
     const { cx, cy, midAngle, innerRadius, outerRadius, value, index, name } = props;
     const RADIAN = Math.PI / 180;
-    const radius = outerRadius + 40; // Position labels outside the chart
+    const radius = outerRadius + dimensions.labelDistance;
     const x = cx + radius * Math.cos(-midAngle * RADIAN);
     const y = cy + radius * Math.sin(-midAngle * RADIAN);
     
@@ -53,7 +65,7 @@ export const SimplePieChart = ({ transactions, title = "Where did my money go?" 
         fill={labelColor}
         textAnchor={textAnchor}
         dominantBaseline="central"
-        fontSize="11"
+        fontSize={dimensions.fontSize}
         fontWeight="600"
         style={{ textShadow: '0 1px 2px rgba(255,255,255,0.8)' }}
       >
@@ -105,15 +117,15 @@ export const SimplePieChart = ({ transactions, title = "Where did my money go?" 
       </CardHeader>
       
       <CardContent>
-        <div className="relative h-80">
+        <div className={`relative ${dimensions.containerHeight}`}>
           <ResponsiveContainer width="100%" height="100%">
-            <PieChart margin={{ top: 40, right: 40, bottom: 40, left: 40 }}>
+            <PieChart margin={dimensions.margin}>
               <Pie
                 data={chartDataWithPercentages}
                 cx="50%"
                 cy="50%"
-                innerRadius={65}
-                outerRadius={110}
+                innerRadius={dimensions.innerRadius}
+                outerRadius={dimensions.outerRadius}
                 fill="#8884d8"
                 dataKey="value"
                 paddingAngle={0}
