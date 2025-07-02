@@ -58,6 +58,7 @@ export type Database = {
           demo_user: boolean | null
           description: string | null
           id: string
+          subcategory: string | null
           type: string
           updated_at: string
           user_id: string
@@ -71,6 +72,7 @@ export type Database = {
           demo_user?: boolean | null
           description?: string | null
           id?: string
+          subcategory?: string | null
           type: string
           updated_at?: string
           user_id: string
@@ -84,6 +86,7 @@ export type Database = {
           demo_user?: boolean | null
           description?: string | null
           id?: string
+          subcategory?: string | null
           type?: string
           updated_at?: string
           user_id?: string

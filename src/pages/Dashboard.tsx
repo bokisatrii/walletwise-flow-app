@@ -5,7 +5,7 @@ import { Plus, ArrowUpRight, ArrowDownRight, TrendingUp, Info } from "lucide-rea
 import { useState, useEffect } from "react";
 import { AddTransactionModal } from "@/components/AddTransactionModal";
 import { useTransactions } from "@/hooks/useTransactions";
-import { TransactionChart } from "@/components/TransactionChart";
+import { TwoLevelPieChart } from "@/components/TwoLevelPieChart";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrency, Currency } from "@/contexts/CurrencyContext";
@@ -183,7 +183,7 @@ const Dashboard = () => {
 
       {/* Spending Chart */}
       <div className="animate-fade-in">
-        <TransactionChart transactions={transactions} />
+        <TwoLevelPieChart transactions={transactions} />
       </div>
 
       {/* Recent Transactions */}

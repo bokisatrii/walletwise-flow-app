@@ -8,6 +8,7 @@ export interface Transaction {
   id: string;
   amount: number;
   category: string;
+  subcategory?: string | null;
   description: string | null;
   date: string;
   type: 'income' | 'expense';
@@ -21,6 +22,7 @@ export interface Transaction {
 export interface TransactionInsert {
   amount: number;
   category: string;
+  subcategory?: string;
   description?: string;
   date: string;
   type: 'income' | 'expense';
@@ -30,6 +32,7 @@ export interface TransactionInsert {
 export interface TransactionUpdate {
   amount?: number;
   category?: string;
+  subcategory?: string;
   description?: string;
   date?: string;
   type?: 'income' | 'expense';
