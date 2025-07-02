@@ -20,7 +20,7 @@ const Dashboard = () => {
   const currentMonth = format(new Date(), 'yyyy-MM');
   console.log('Current month:', currentMonth);
   
-  const { data: transactions = [], isLoading, error } = useTransactions(currentMonth);
+  const { data: transactions = [], isLoading, error } = useTransactions();
   const { convertAmount, formatAmount, displayCurrency } = useCurrency();
 
   console.log('Dashboard state:', {
