@@ -17,9 +17,7 @@ export const ChartTooltip = ({ active, payload }: ChartTooltipProps) => {
         <p className="text-muted-foreground text-sm">
           {data.percentage}% of total spending
         </p>
-        <div className="mt-2 pt-2 border-t border-border">
-          
-        </div>
+        
       </div>
     );
   }
