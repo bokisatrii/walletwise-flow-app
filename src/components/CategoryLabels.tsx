@@ -23,14 +23,27 @@ export const CategoryLabels = ({ data, centerX, centerY, radius }: CategoryLabel
         // Convert to radians for trigonometry
         const radians = (midAngle - 90) * (Math.PI / 180); // -90 to start from top
         
-        // Calculate position outside the donut
-        const labelRadius = radius + 25; // Position labels 25px outside the ring
+        // Calculate position outside the donut with better spacing
+        const labelRadius = radius + 40; // Increased distance for better spacing
         const x = centerX + Math.cos(radians) * labelRadius;
         const y = centerY + Math.sin(radians) * labelRadius;
         
         // Get darkened color for the label
         const originalColor = CHART_COLORS[index % CHART_COLORS.length];
-        const darkenedColor = darkenColor(originalColor, 25);
+        const darkenedColor = darkenColor(originalColor, 30);
+        
+        // Better text positioning based on angle
+        let textAlign: 'left' | 'center' | 'right' = 'center';
+        let offsetX = 0;
+        
+        // Adjust text alignment based on position around circle
+        if (radians > -Math.PI/4 && radians < Math.PI/4) {
+          textAlign = 'left';
+          offsetX = 10;
+        } else if (radians > 3*Math.PI/4 || radians < -3*Math.PI/4) {
+          textAlign = 'right';
+          offsetX = -10;
+        }
         
         // Update cumulative angle for next iteration
         cumulativeAngle += segmentAngle;
@@ -38,17 +51,17 @@ export const CategoryLabels = ({ data, centerX, centerY, radius }: CategoryLabel
         return (
           <div
             key={item.name}
-            className="absolute text-sm font-medium transition-all duration-300 animate-fade-in"
+            className="absolute text-sm font-medium transition-all duration-300 animate-fade-in whitespace-nowrap"
             style={{
-              left: x - 50, // Center the text (approximate width compensation)
-              top: y - 10,  // Center the text vertically
+              left: x + offsetX - (textAlign === 'center' ? 50 : textAlign === 'right' ? 100 : 0),
+              top: y - 8,
               color: darkenedColor,
-              width: '100px',
-              textAlign: 'center',
-              fontSize: '12px',
+              textAlign,
+              fontSize: '11px',
               fontWeight: '600',
               textShadow: '0 1px 2px rgba(255,255,255,0.8)',
-              animationDelay: `${index * 100}ms`
+              animationDelay: `${index * 100}ms`,
+              minWidth: textAlign === 'center' ? '100px' : 'auto'
             }}
           >
             {item.name}
