@@ -138,7 +138,8 @@ export const SimplePieChart = ({ transactions, title = "Where did my money go?" 
                 data={chartData}
                 cx="50%"
                 cy="50%"
-                outerRadius={80}
+                innerRadius={60}
+                outerRadius={100}
                 fill="#8884d8"
                 dataKey="value"
                 paddingAngle={5}
