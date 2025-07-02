@@ -138,39 +138,6 @@ export const SimplePieChart = ({ transactions, title = "Where did my money go?" 
     return null;
   };
 
-  const renderCustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percentage, name }: any) => {
-    if (parseFloat(percentage) < 7) return null; // Hide labels for small segments
-    
-    const RADIAN = Math.PI / 180;
-    const radius = innerRadius + (outerRadius - innerRadius) * 0.7;
-    const x = cx + radius * Math.cos(-midAngle * RADIAN);
-    const y = cy + radius * Math.sin(-midAngle * RADIAN);
-
-    return (
-      <g>
-        <text 
-          x={x} 
-          y={y - 8} 
-          fill="hsl(var(--foreground))" 
-          textAnchor="middle" 
-          dominantBaseline="middle"
-          className="text-xs font-medium"
-        >
-          {name.length > 8 ? name.substring(0, 8) + '...' : name}
-        </text>
-        <text 
-          x={x} 
-          y={y + 8} 
-          fill="hsl(var(--foreground))" 
-          textAnchor="middle" 
-          dominantBaseline="middle"
-          className="text-sm font-bold"
-        >
-          {`${percentage}%`}
-        </text>
-      </g>
-    );
-  };
 
   return (
     <Card className="animate-fade-in">
@@ -193,7 +160,7 @@ export const SimplePieChart = ({ transactions, title = "Where did my money go?" 
       </CardHeader>
       
       <CardContent>
-        <div className="h-80">
+        <div className="relative h-80">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
@@ -207,7 +174,6 @@ export const SimplePieChart = ({ transactions, title = "Where did my money go?" 
                 paddingAngle={0}
                 animationBegin={0}
                 animationDuration={1000}
-                label={renderCustomLabel}
                 labelLine={false}
                 stroke="hsl(var(--background))"
                 strokeWidth={4}
@@ -239,25 +205,49 @@ export const SimplePieChart = ({ transactions, title = "Where did my money go?" 
               <Tooltip content={renderCustomTooltip} />
             </PieChart>
           </ResponsiveContainer>
+          
+          {/* Center Information */}
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div className="text-center">
+              <p className="text-2xl font-bold text-foreground">
+                {formatAmount(insights.totalSpent, displayCurrency)}
+              </p>
+              <p className="text-sm text-muted-foreground">Total Spent</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Top: {insights.topCategory}
+              </p>
+            </div>
+          </div>
         </div>
         
-        {/* Legend */}
-        <div className="mt-4">
-          <div className="grid grid-cols-2 gap-2">
-            {chartData.slice(0, 6).map((item, index) => (
-              <div key={item.name} className="flex items-center gap-2 hover-scale transition-transform duration-200">
-                <div 
-                  className="w-3 h-3 rounded-full" 
-                  style={{ backgroundColor: COLORS[index % COLORS.length] }}
-                />
-                <span className="text-sm text-muted-foreground truncate">
-                  {item.name}: {formatAmount(item.value, displayCurrency)}
-                </span>
+        {/* Enhanced Legend */}
+        <div className="mt-6">
+          <h4 className="text-sm font-medium text-foreground mb-3">Spending Breakdown</h4>
+          <div className="grid grid-cols-1 gap-3">
+            {chartDataWithPercentages.slice(0, 8).map((item, index) => (
+              <div key={item.name} className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50 transition-colors duration-200">
+                <div className="flex items-center gap-3">
+                  <div 
+                    className="w-4 h-4 rounded-full flex-shrink-0" 
+                    style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                  />
+                  <span className="text-sm font-medium text-foreground">
+                    {item.name}
+                  </span>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm font-semibold text-foreground">
+                    {formatAmount(item.value, displayCurrency)}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {item.percentage}%
+                  </p>
+                </div>
               </div>
             ))}
-            {chartData.length > 6 && (
-              <div className="text-xs text-muted-foreground col-span-2">
-                +{chartData.length - 6} more categories
+            {chartDataWithPercentages.length > 8 && (
+              <div className="text-xs text-muted-foreground text-center pt-2 border-t border-border">
+                +{chartDataWithPercentages.length - 8} more categories
               </div>
             )}
           </div>
