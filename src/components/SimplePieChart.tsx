@@ -53,12 +53,12 @@ export const SimplePieChart = ({
   // Memoized responsive dimensions
   const dimensions = useMemo(() => ({
     innerRadius: isMobile ? 45 : 65,
-    outerRadius: isMobile ? 75 : 110,
-    labelDistance: isMobile ? 18 : 40,
-    fontSize: isMobile ? "13" : "11",
-    containerHeight: isMobile ? "h-80" : "h-80",
+    outerRadius: isMobile ? 60 : 110,
+    labelDistance: isMobile ? 12 : 40,
+    fontSize: isMobile ? "14" : "11",
+    containerHeight: isMobile ? "h-96" : "h-80",
     margin: isMobile 
-      ? { top: 35, right: 35, bottom: 35, left: 35 } 
+      ? { top: 25, right: 25, bottom: 25, left: 25 } 
       : { top: 40, right: 40, bottom: 40, left: 40 }
   }), [isMobile]);
 
@@ -67,7 +67,7 @@ export const SimplePieChart = ({
     const { cx, cy, midAngle, outerRadius, value, index, name } = props;
     
     // Early return for very small percentages to avoid clutter
-    if (value < 2) return null;
+    if (value < (isMobile ? 3 : 2)) return null;
     
     const RADIAN = Math.PI / 180;
     const radius = outerRadius + dimensions.labelDistance;
