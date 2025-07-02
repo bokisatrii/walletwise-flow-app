@@ -69,7 +69,7 @@ export const SimplePieChart = ({ transactions, title = "Where did my money go?" 
         fontWeight="600"
         style={{ textShadow: '0 1px 2px rgba(255,255,255,0.8)' }}
       >
-        {name}
+        {name} ({value.toFixed(1)}%)
       </text>
     );
   };
