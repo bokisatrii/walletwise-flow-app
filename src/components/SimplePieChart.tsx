@@ -24,6 +24,21 @@ const COLORS = [
   '#8DD1E1', '#D084D0'
 ];
 
+// Function to determine explosion direction based on segment angle
+const getExplosionClass = (midAngle: number): string => {
+  // Normalize angle to 0-360 range
+  const normalizedAngle = ((midAngle % 360) + 360) % 360;
+  
+  if (normalizedAngle >= 0 && normalizedAngle < 45) return 'explode-right';
+  if (normalizedAngle >= 45 && normalizedAngle < 90) return 'explode-bottom-right';
+  if (normalizedAngle >= 90 && normalizedAngle < 135) return 'explode-bottom';
+  if (normalizedAngle >= 135 && normalizedAngle < 180) return 'explode-bottom-left';
+  if (normalizedAngle >= 180 && normalizedAngle < 225) return 'explode-left';
+  if (normalizedAngle >= 225 && normalizedAngle < 270) return 'explode-top-left';
+  if (normalizedAngle >= 270 && normalizedAngle < 315) return 'explode-top';
+  return 'explode-top-right';
+};
+
 export const SimplePieChart = ({ transactions, title = "Where did my money go?" }: SimplePieChartProps) => {
   const { displayCurrency, convertAmount, formatAmount } = useCurrency();
 
@@ -124,24 +139,36 @@ export const SimplePieChart = ({ transactions, title = "Where did my money go?" 
   };
 
   const renderCustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percentage, name }: any) => {
-    if (parseFloat(percentage) < 5) return null; // Hide labels for small segments
+    if (parseFloat(percentage) < 7) return null; // Hide labels for small segments
     
     const RADIAN = Math.PI / 180;
-    const radius = innerRadius + (outerRadius - innerRadius) * 1.4;
+    const radius = innerRadius + (outerRadius - innerRadius) * 0.7;
     const x = cx + radius * Math.cos(-midAngle * RADIAN);
     const y = cy + radius * Math.sin(-midAngle * RADIAN);
 
     return (
-      <text 
-        x={x} 
-        y={y} 
-        fill="hsl(var(--foreground))" 
-        textAnchor={x > cx ? 'start' : 'end'} 
-        dominantBaseline="central"
-        className="text-sm font-semibold"
-      >
-        {`${percentage}%`}
-      </text>
+      <g>
+        <text 
+          x={x} 
+          y={y - 8} 
+          fill="hsl(var(--foreground))" 
+          textAnchor="middle" 
+          dominantBaseline="middle"
+          className="text-xs font-medium"
+        >
+          {name.length > 8 ? name.substring(0, 8) + '...' : name}
+        </text>
+        <text 
+          x={x} 
+          y={y + 8} 
+          fill="hsl(var(--foreground))" 
+          textAnchor="middle" 
+          dominantBaseline="middle"
+          className="text-sm font-bold"
+        >
+          {`${percentage}%`}
+        </text>
+      </g>
     );
   };
 
@@ -177,24 +204,37 @@ export const SimplePieChart = ({ transactions, title = "Where did my money go?" 
                 outerRadius={110}
                 fill="#8884d8"
                 dataKey="value"
-                paddingAngle={8}
+                paddingAngle={0}
                 animationBegin={0}
                 animationDuration={1000}
                 label={renderCustomLabel}
                 labelLine={false}
                 stroke="hsl(var(--background))"
-                strokeWidth={3}
+                strokeWidth={4}
               >
-                {chartDataWithPercentages.map((entry, index) => (
-                  <Cell 
-                    key={`cell-${index}`} 
-                    fill={COLORS[index % COLORS.length]}
-                    className="hover:brightness-110 hover:drop-shadow-lg transition-all duration-300 cursor-pointer hover:scale-105"
-                    style={{
-                      filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.1))"
-                    }}
-                  />
-                ))}
+                {chartDataWithPercentages.map((entry, index) => {
+                  // Calculate the midpoint angle for this segment to determine explosion direction
+                  const startAngle = chartDataWithPercentages.slice(0, index).reduce((sum, item) => 
+                    sum + (parseFloat(item.percentage) * 3.6), 0
+                  );
+                  const endAngle = startAngle + (parseFloat(entry.percentage) * 3.6);
+                  const midAngle = (startAngle + endAngle) / 2;
+                  
+                  // Convert angle to determine explosion direction
+                  const explosionClass = getExplosionClass(midAngle);
+                  
+                  return (
+                    <Cell 
+                      key={`cell-${index}`} 
+                      fill={COLORS[index % COLORS.length]}
+                      className={`segment-hover ${explosionClass} transition-all duration-300 cursor-pointer`}
+                      style={{
+                        filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.1))",
+                        transformOrigin: "center"
+                      }}
+                    />
+                  );
+                })}
               </Pie>
               <Tooltip content={renderCustomTooltip} />
             </PieChart>

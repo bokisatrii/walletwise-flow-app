@@ -109,4 +109,47 @@
   .gradient-card {
     background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(16, 185, 129, 0.05) 100%);
   }
+
+  /* Donut Chart Explosion Hover Effects */
+  .segment-hover {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+  }
+
+  .segment-hover:hover {
+    filter: drop-shadow(0 8px 25px rgba(0,0,0,0.3)) brightness(1.1);
+    z-index: 10;
+  }
+
+  .explode-right:hover {
+    transform: translate(8px, 0);
+  }
+
+  .explode-bottom-right:hover {
+    transform: translate(6px, 6px);
+  }
+
+  .explode-bottom:hover {
+    transform: translate(0, 8px);
+  }
+
+  .explode-bottom-left:hover {
+    transform: translate(-6px, 6px);
+  }
+
+  .explode-left:hover {
+    transform: translate(-8px, 0);
+  }
+
+  .explode-top-left:hover {
+    transform: translate(-6px, -6px);
+  }
+
+  .explode-top:hover {
+    transform: translate(0, -8px);
+  }
+
+  .explode-top-right:hover {
+    transform: translate(6px, -6px);
+  }
 }
