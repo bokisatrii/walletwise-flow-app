@@ -12,6 +12,7 @@ export interface Subscription {
   next_payment_date: string;
   description: string | null;
   renewal_interval: string | null;
+  currency: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -22,6 +23,7 @@ export interface SubscriptionUpdate {
   next_payment_date?: string;
   description?: string | null;
   renewal_interval?: string | null;
+  currency?: string | null;
 }
 
 export const useSubscriptions = () => {
