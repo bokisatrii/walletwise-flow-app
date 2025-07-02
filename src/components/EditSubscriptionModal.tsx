@@ -7,6 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useSubscriptions, Subscription } from "@/hooks/useSubscriptions";
+import { CurrencySelect } from "@/components/ui/currency-select";
+import { Currency } from "@/contexts/CurrencyContext";
 
 interface EditSubscriptionModalProps {
   open: boolean;
@@ -20,6 +22,7 @@ export const EditSubscriptionModal = ({ open, onOpenChange, subscription }: Edit
   const [nextPaymentDate, setNextPaymentDate] = useState("");
   const [description, setDescription] = useState("");
   const [renewalInterval, setRenewalInterval] = useState("Monthly");
+  const [currency, setCurrency] = useState<Currency>("EUR");
 
   const { updateSubscription, isUpdatingSubscription } = useSubscriptions();
 
@@ -30,6 +33,7 @@ export const EditSubscriptionModal = ({ open, onOpenChange, subscription }: Edit
       setNextPaymentDate(subscription.next_payment_date);
       setDescription(subscription.description || "");
       setRenewalInterval(subscription.renewal_interval || "Monthly");
+      setCurrency((subscription.currency as Currency) || "EUR");
     }
   }, [subscription]);
 
@@ -48,6 +52,7 @@ export const EditSubscriptionModal = ({ open, onOpenChange, subscription }: Edit
         next_payment_date: nextPaymentDate,
         description: description.trim() || null,
         renewal_interval: renewalInterval,
+        currency: currency,
       }
     });
 
@@ -88,16 +93,24 @@ export const EditSubscriptionModal = ({ open, onOpenChange, subscription }: Edit
 
           <div className="space-y-2">
             <Label htmlFor="amount">Amount *</Label>
-            <Input
-              id="amount"
-              type="number"
-              step="0.01"
-              min="0"
-              placeholder="0.00"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              required
-            />
+            <div className="flex gap-2">
+              <Input
+                id="amount"
+                type="number"
+                step="0.01"
+                min="0"
+                placeholder="0.00"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                required
+                className="flex-1"
+              />
+              <CurrencySelect 
+                value={currency} 
+                onValueChange={setCurrency}
+                className="w-24"
+              />
+            </div>
           </div>
 
           <div className="space-y-2">

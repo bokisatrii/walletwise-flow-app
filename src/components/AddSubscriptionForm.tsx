@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useSubscriptions } from "@/hooks/useSubscriptions";
-import { CurrencySelector } from "@/components/CurrencySelector";
+import { CurrencySelect } from "@/components/ui/currency-select";
 import { useCurrency, Currency } from "@/contexts/CurrencyContext";
 
 interface AddSubscriptionFormProps {
@@ -87,7 +87,7 @@ export const AddSubscriptionForm = ({ open, onOpenChange }: AddSubscriptionFormP
                 required
                 className="flex-1"
               />
-              <CurrencySelector 
+              <CurrencySelect 
                 value={currency} 
                 onValueChange={setCurrency}
                 className="w-24"
