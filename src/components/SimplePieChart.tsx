@@ -156,9 +156,6 @@ export const SimplePieChart = ({
           <TrendingUp className="h-3 w-3 mr-1" />
           Top: {insights.topCategory} ({insights.topPercentage.toFixed(0)}%)
         </Badge>
-        <Badge variant="outline" className="text-xs">
-          Total: {formatAmount(insights.totalSpent, displayCurrency)}
-        </Badge>
         {insights.categoriesCount > 1 && (
           <Badge variant="outline" className="text-xs">
             {insights.categoriesCount} categories
