@@ -5,10 +5,9 @@ import { Badge } from "@/components/ui/badge";
 import { TrendingUp } from "lucide-react";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useChartData } from "@/hooks/useChartData";
-import { CategoryLabels } from "@/components/CategoryLabels";
 import { ChartLegend } from "@/components/ChartLegend";
 import { ChartTooltip } from "@/components/ChartTooltip";
-import { getExplosionClass, CHART_COLORS } from "@/lib/chartUtils";
+import { getExplosionClass, CHART_COLORS, darkenColor } from "@/lib/chartUtils";
 
 interface Transaction {
   id: string;
@@ -26,6 +25,42 @@ interface SimplePieChartProps {
 export const SimplePieChart = ({ transactions, title = "Where did my money go?" }: SimplePieChartProps) => {
   const { formatAmount, displayCurrency } = useCurrency();
   const { chartDataWithPercentages, insights } = useChartData(transactions);
+
+  // Custom label renderer for outside labels
+  const renderOutsideLabel = (props: any) => {
+    const { cx, cy, midAngle, innerRadius, outerRadius, value, index, name } = props;
+    const RADIAN = Math.PI / 180;
+    const radius = outerRadius + 40; // Position labels outside the chart
+    const x = cx + radius * Math.cos(-midAngle * RADIAN);
+    const y = cy + radius * Math.sin(-midAngle * RADIAN);
+    
+    // Get darkened color for this segment
+    const originalColor = CHART_COLORS[index % CHART_COLORS.length];
+    const labelColor = darkenColor(originalColor, 30);
+    
+    // Determine text anchor based on position
+    let textAnchor = 'middle';
+    if (x > cx) {
+      textAnchor = 'start';
+    } else if (x < cx) {
+      textAnchor = 'end';
+    }
+
+    return (
+      <text 
+        x={x} 
+        y={y} 
+        fill={labelColor}
+        textAnchor={textAnchor}
+        dominantBaseline="central"
+        fontSize="11"
+        fontWeight="600"
+        style={{ textShadow: '0 1px 2px rgba(255,255,255,0.8)' }}
+      >
+        {name}
+      </text>
+    );
+  };
 
   if (chartDataWithPercentages.length === 0) {
     return (
@@ -72,7 +107,7 @@ export const SimplePieChart = ({ transactions, title = "Where did my money go?" 
       <CardContent>
         <div className="relative h-80">
           <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
+            <PieChart margin={{ top: 40, right: 40, bottom: 40, left: 40 }}>
               <Pie
                 data={chartDataWithPercentages}
                 cx="50%"
@@ -85,6 +120,7 @@ export const SimplePieChart = ({ transactions, title = "Where did my money go?" 
                 animationBegin={0}
                 animationDuration={1000}
                 labelLine={false}
+                label={renderOutsideLabel}
                 stroke="hsl(var(--background))"
                 strokeWidth={4}
               >
@@ -115,13 +151,6 @@ export const SimplePieChart = ({ transactions, title = "Where did my money go?" 
               <Tooltip content={<ChartTooltip />} />
             </PieChart>
           </ResponsiveContainer>
-          
-          <CategoryLabels 
-            data={chartDataWithPercentages} 
-            centerX={200} 
-            centerY={160} 
-            radius={110} 
-          />
         </div>
         
         <ChartLegend 
