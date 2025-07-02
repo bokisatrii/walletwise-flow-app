@@ -18,9 +18,7 @@ export const ChartTooltip = ({ active, payload }: ChartTooltipProps) => {
           {data.percentage}% of total spending
         </p>
         <div className="mt-2 pt-2 border-t border-border">
-          <p className="text-xs text-muted-foreground">
-            Click to view transactions in this category
-          </p>
+          
         </div>
       </div>
     );
