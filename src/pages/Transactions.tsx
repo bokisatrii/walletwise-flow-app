@@ -135,7 +135,7 @@ const Transactions = () => {
       </div>
 
       {/* Daily Spending Chart */}
-      <DailySpendingChart transactions={currentMonthTransactions} currentMonth={new Date()} />
+      <DailySpendingChart transactions={filteredTransactions} currentMonth={new Date(selectedMonth)} />
 
       {/* Filters */}
       <div className="space-y-3">
